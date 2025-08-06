@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - Moonoi Developer</title>
+    <meta name="description" content="เข้าสู่ระบบ Moonoi Developer เพื่อเข้าถึงสินค้าและบริการของเรา">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-code me-2"></i>
+                <span>Moonoi Developer</span>
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-1"></i>กลับหน้าแรก
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Section -->
+    <div class="container-fluid">
+        <div class="row min-vh-100">
+            <!-- Left Side - Hero -->
+            <div class="col-lg-6 d-none d-lg-flex bg-gradient-primary text-light p-5 flex-column justify-content-center">
+                <div class="text-center">
+                    <i class="fas fa-code display-1 mb-4"></i>
+                    <h2 class="mb-4">ยินดีต้อนรับกลับ</h2>
+                    <p class="lead mb-4">เข้าสู่ระบบเพื่อเข้าถึง Script และ Resource คุณภาพสูง</p>
+                    <div class="row text-center mt-5">
+                        <div class="col-4">
+                            <i class="fas fa-shield-alt fa-2x mb-2"></i>
+                            <p>ปลอดภัย</p>
+                        </div>
+                        <div class="col-4">
+                            <i class="fas fa-download fa-2x mb-2"></i>
+                            <p>ดาวน์โหลดทันที</p>
+                        </div>
+                        <div class="col-4">
+                            <i class="fas fa-headset fa-2x mb-2"></i>
+                            <p>Support 24/7</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Side - Login Form -->
+            <div class="col-lg-6 d-flex align-items-center justify-content-center p-5">
+                <div class="w-100" style="max-width: 400px;">
+                    <!-- Logo for mobile -->
+                    <div class="text-center d-lg-none mb-4">
+                        <i class="fas fa-code fa-3x text-primary mb-2"></i>
+                        <h3>Moonoi Developer</h3>
+                    </div>
+                    
+                    <div class="card shadow-lg border-0">
+                        <div class="card-body p-5">
+                            <h3 class="text-center mb-4">เข้าสู่ระบบ</h3>
+                            
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label for="loginEmail" class="form-label">
+                                        <i class="fas fa-user me-2"></i>ชื่อผู้ใช้หรืออีเมล
+                                    </label>
+                                    <input type="text" class="form-control form-control-lg" id="loginEmail" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="loginPassword" class="form-label">
+                                        <i class="fas fa-lock me-2"></i>รหัสผ่าน
+                                    </label>
+                                    <div class="position-relative">
+                                        <input type="password" class="form-control form-control-lg" id="loginPassword" required>
+                                        <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y pe-3" id="togglePassword">
+                                            <i class="fas fa-eye" id="passwordIcon"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">
+                                        จดจำการเข้าสู่ระบบ
+                                    </label>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="loginBtn">
+                                    <i class="fas fa-sign-in-alt me-2"></i>เข้าสู่ระบบ
+                                </button>
+                            </form>
+                            
+                            <div class="text-center mb-3">
+                                <span class="text-muted">หรือ</span>
+                            </div>
+                            
+                            <!-- OAuth Buttons -->
+                            <div class="d-grid gap-2">
+                                <a href="/auth/google" class="btn btn-outline-danger">
+                                    <i class="fab fa-google me-2"></i>เข้าสู่ระบบด้วย Google
+                                </a>
+                                <a href="/auth/discord" class="btn btn-outline-primary">
+                                    <i class="fab fa-discord me-2"></i>เข้าสู่ระบบด้วย Discord
+                                </a>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <div class="text-center">
+                                <p class="mb-2">
+                                    <a href="#" class="text-decoration-none">ลืมรหัสผ่าน?</a>
+                                </p>
+                                <p class="mb-0">
+                                    ยังไม่มีบัญชี? 
+                                    <a href="/register" class="text-decoration-none fw-bold">สมัครสมาชิก</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Terms -->
+                    <div class="text-center mt-4">
+                        <small class="text-muted">
+                            การเข้าสู่ระบบแสดงว่าคุณยอมรับ
+                            <a href="#" class="text-decoration-none">ข้อกำหนดการใช้งาน</a>
+                            และ
+                            <a href="#" class="text-decoration-none">นโยบายความเป็นส่วนตัว</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('loginPassword');
+            const passwordIcon = document.getElementById('passwordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordIcon.classList.remove('fa-eye');
+                passwordIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                passwordIcon.classList.remove('fa-eye-slash');
+                passwordIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Handle login form
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (!email || !password) {
+                showAlert('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน', 'warning');
+                return;
+            }
+            
+            // Show loading
+            showLoading(loginBtn);
+            
+            try {
+                await login(email, password);
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', 'danger');
+            } finally {
+                hideLoading(loginBtn);
+            }
+        });
+
+        // Check for OAuth callback
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const error = urlParams.get('error');
+            
+            if (token) {
+                localStorage.setItem('authToken', token);
+                showAlert('เข้าสู่ระบบสำเร็จ', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1500);
+            } else if (error) {
+                let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+                if (error === 'google_auth_failed') {
+                    errorMessage = 'ไม่สามารถเข้าสู่ระบบด้วย Google ได้';
+                } else if (error === 'discord_auth_failed') {
+                    errorMessage = 'ไม่สามารถเข้าสู่ระบบด้วย Discord ได้';
+                }
+                showAlert(errorMessage, 'danger');
+            }
+            
+            // Clear URL parameters
+            if (token || error) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+    </script>
+</body>
+</html>

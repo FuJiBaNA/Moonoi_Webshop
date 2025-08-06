@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมัครสมาชิก - Moonoi Developer</title>
+    <meta name="description" content="สมัครสมาชิก Moonoi Developer เพื่อเข้าถึงสินค้าและบริการของเรา">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-code me-2"></i>
+                <span>Moonoi Developer</span>
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">
+                    <i class="fas fa-home me-1"></i>กลับหน้าแรก
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Register Section -->
+    <div class="container-fluid">
+        <div class="row min-vh-100">
+            <!-- Left Side - Hero -->
+            <div class="col-lg-6 d-none d-lg-flex bg-gradient-primary text-light p-5 flex-column justify-content-center">
+                <div class="text-center">
+                    <i class="fas fa-user-plus display-1 mb-4"></i>
+                    <h2 class="mb-4">เข้าร่วมกับเรา</h2>
+                    <p class="lead mb-4">สมัครสมาชิกและเริ่มต้นใช้งาน Script คุณภาพสูงได้ทันที</p>
+                    
+                    <div class="row text-center mt-5">
+                        <div class="col-6">
+                            <i class="fas fa-gift fa-2x mb-2"></i>
+                            <p>โบนัสสมาชิกใหม่</p>
+                        </div>
+                        <div class="col-6">
+                            <i class="fas fa-vial fa-2x mb-2"></i>
+                            <p>ทดลองใช้ฟรี</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <p class="mb-2">มีบัญชีอยู่แล้ว?</p>
+                        <a href="/login" class="btn btn-outline-light">
+                            <i class="fas fa-sign-in-alt me-2"></i>เข้าสู่ระบบ
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Side - Register Form -->
+            <div class="col-lg-6 d-flex align-items-center justify-content-center p-5">
+                <div class="w-100" style="max-width: 450px;">
+                    <!-- Logo for mobile -->
+                    <div class="text-center d-lg-none mb-4">
+                        <i class="fas fa-code fa-3x text-primary mb-2"></i>
+                        <h3>Moonoi Developer</h3>
+                    </div>
+                    
+                    <div class="card shadow-lg border-0">
+                        <div class="card-body p-5">
+                            <h3 class="text-center mb-4">สมัครสมาชิก</h3>
+                            
+                            <form id="registerForm">
+                                <div class="mb-3">
+                                    <label for="registerUsername" class="form-label">
+                                        <i class="fas fa-user me-2"></i>ชื่อผู้ใช้
+                                    </label>
+                                    <input type="text" class="form-control" id="registerUsername" required>
+                                    <div class="form-text">ชื่อผู้ใช้ต้องมีความยาว 3-20 ตัวอักษร</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="registerEmail" class="form-label">
+                                        <i class="fas fa-envelope me-2"></i>อีเมล
+                                    </label>
+                                    <input type="email" class="form-control" id="registerEmail" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="registerPassword" class="form-label">
+                                        <i class="fas fa-lock me-2"></i>รหัสผ่าน
+                                    </label>
+                                    <div class="position-relative">
+                                        <input type="password" class="form-control" id="registerPassword" required>
+                                        <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y pe-3" id="togglePassword">
+                                            <i class="fas fa-eye" id="passwordIcon"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="confirmPassword" class="form-label">
+                                        <i class="fas fa-lock me-2"></i>ยืนยันรหัสผ่าน
+                                    </label>
+                                    <div class="position-relative">
+                                        <input type="password" class="form-control" id="confirmPassword" required>
+                                        <button type="button" class="btn btn-link position-absolute end-0 top-50 translate-middle-y pe-3" id="toggleConfirmPassword">
+                                            <i class="fas fa-eye" id="confirmPasswordIcon"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Password strength indicator -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <small class="text-muted">ความแข็งแกร่งของรหัสผ่าน</small>
+                                        <small id="passwordStrengthText" class="text-muted">อ่อน</small>
+                                    </div>
+                                    <div class="progress" style="height: 5px;">
+                                        <div id="passwordStrengthBar" class="progress-bar bg-danger" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                                    <label class="form-check-label" for="agreeTerms">
+                                        ยอมรับ <a href="#" class="text-decoration-none">ข้อกำหนดการใช้งาน</a> 
+                                        และ <a href="#" class="text-decoration-none">นโยบายความเป็นส่วนตัว</a>
+                                    </label>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="newsletter">
+                                    <label class="form-check-label" for="newsletter">
+                                        รับข่าวสารและโปรโมชั่นทางอีเมล
+                                    </label>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="registerBtn">
+                                    <i class="fas fa-user-plus me-2"></i>สมัครสมาชิก
+                                </button>
+                            </form>
+                            
+                            <div class="text-center mb-3">
+                                <span class="text-muted">หรือ</span>
+                            </div>
+                            
+                            <!-- OAuth Buttons -->
+                            <div class="d-grid gap-2">
+                                <a href="/auth/google" class="btn btn-outline-danger">
+                                    <i class="fab fa-google me-2"></i>สมัครด้วย Google
+                                </a>
+                                <a href="/auth/discord" class="btn btn-outline-primary">
+                                    <i class="fab fa-discord me-2"></i>สมัครด้วย Discord
+                                </a>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <div class="text-center">
+                                <p class="mb-0">
+                                    มีบัญชีอยู่แล้ว? 
+                                    <a href="/login" class="text-decoration-none fw-bold">เข้าสู่ระบบ</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('registerPassword');
+            const passwordIcon = document.getElementById('passwordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordIcon.classList.remove('fa-eye');
+                passwordIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                passwordIcon.classList.remove('fa-eye-slash');
+                passwordIcon.classList.add('fa-eye');
+            }
+        });
+
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('confirmPassword');
+            const passwordIcon = document.getElementById('confirmPasswordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordIcon.classList.remove('fa-eye');
+                passwordIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                passwordIcon.classList.remove('fa-eye-slash');
+                passwordIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Password strength checker
+        document.getElementById('registerPassword').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.getElementById('passwordStrengthBar');
+            const strengthText = document.getElementById('passwordStrengthText');
+            
+            let strength = 0;
+            let strengthLabel = 'อ่อน';
+            let strengthColor = 'bg-danger';
+            
+            if (password.length >= 6) strength += 1;
+            if (password.match(/[a-z]/)) strength += 1;
+            if (password.match(/[A-Z]/)) strength += 1;
+            if (password.match(/[0-9]/)) strength += 1;
+            if (password.match(/[^a-zA-Z0-9]/)) strength += 1;
+            
+            const percentage = (strength / 5) * 100;
+            
+            if (strength >= 4) {
+                strengthLabel = 'แข็งแกร่ง';
+                strengthColor = 'bg-success';
+            } else if (strength >= 3) {
+                strengthLabel = 'ปานกลาง';
+                strengthColor = 'bg-warning';
+            } else if (strength >= 2) {
+                strengthLabel = 'อ่อน';
+                strengthColor = 'bg-danger';
+            }
+            
+            strengthBar.className = `progress-bar ${strengthColor}`;
+            strengthBar.style.width = percentage + '%';
+            strengthText.textContent = strengthLabel;
+        });
+
+        // Handle register form
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const agreeTerms = document.getElementById('agreeTerms').checked;
+            const registerBtn = document.getElementById('registerBtn');
+            
+            // Validation
+            if (!username || !email || !password || !confirmPassword) {
+                showAlert('กรุณากรอกข้อมูลให้ครบทุกช่อง', 'warning');
+                return;
+            }
+            
+            if (username.length < 3 || username.length > 20) {
+                showAlert('ชื่อผู้ใช้ต้องมีความยาว 3-20 ตัวอักษร', 'warning');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showAlert('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'warning');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showAlert('รหัสผ่านไม่ตรงกัน', 'warning');
+                return;
+            }
+            
+            if (!agreeTerms) {
+                showAlert('กรุณายอมรับข้อกำหนดการใช้งาน', 'warning');
+                return;
+            }
+            
+            // Show loading
+            showLoading(registerBtn);
+            
+            try {
+                await register(username, email, password, confirmPassword);
+            } catch (error) {
+                console.error('Register error:', error);
+                showAlert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', 'danger');
+            } finally {
+                hideLoading(registerBtn);
+            }
+        });
+
+        // Check for OAuth callback
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const error = urlParams.get('error');
+            
+            if (token) {
+                localStorage.setItem('authToken', token);
+                showAlert('สมัครสมาชิกสำเร็จ', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1500);
+            } else if (error) {
+                let errorMessage = 'เกิดข้อผิดพลาดในการสมัครสมาชิก';
+                if (error === 'google_auth_failed') {
+                    errorMessage = 'ไม่สามารถสมัครด้วย Google ได้';
+                } else if (error === 'discord_auth_failed') {
+                    errorMessage = 'ไม่สามารถสมัครด้วย Discord ได้';
+                }
+                showAlert(errorMessage, 'danger');
+            }
+            
+            // Clear URL parameters
+            if (token || error) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        });
+    </script>
+</body>
+</html>
