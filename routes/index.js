@@ -1,4 +1,4 @@
-// routes/index.js - Fixed Main Routes File with Working Debug Routes
+// routes/index.js 
 const express = require('express');
 const path = require('path');
 

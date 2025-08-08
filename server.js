@@ -12,7 +12,6 @@ const crypto = require('crypto');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const DiscordStrategy = require('passport-discord').Strategy;
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -26,7 +25,7 @@ const app = express();
 const config = {
     port: process.env.PORT || 3000,
     jwt_secret: process.env.JWT_SECRET || 'jwt-key-default-change-this',
-    
+
     // Database Configuration
     database: {
         host: process.env.DB_HOST || 'localhost',
@@ -38,26 +37,20 @@ const config = {
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,
-        connectTimeout: 60000,  
+        connectTimeout: 60000,
         timeout: 60000
     },
-    
+
     // API Keys
     truewallet_api_key: process.env.TRUEWALLET_API_KEY || 'BYShop-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     slip_api_key: process.env.SLIP_API_KEY || 'BYShop-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     moonoi_api_secret: process.env.MOONOI_API_SECRET || 'MoonoiXyI08BJdi3RdOB24YYpNVDir5UeHpFUjz21cJny4Htbtj5Gq9rchTIp1zC7p49D5zFw8QIhgtiW3sdjBV8QcMFa6ClnH6HsF3wqkV8TfmW723FrvyQ1I1dSiai',
-    
-    // OAuth Configuration
-    google: {
-        client_id: process.env.GOOGLE_CLIENT_ID || 'your-google-client-id',
-        client_secret: process.env.GOOGLE_CLIENT_SECRET || 'your-google-client-secret'
-    },
-    
+
     discord: {
         client_id: process.env.DISCORD_CLIENT_ID || 'your-discord-client-id',
         client_secret: process.env.DISCORD_CLIENT_SECRET || 'your-discord-client-secret'
     },
-    
+
     // Site Configuration
     site_name: process.env.SITE_NAME || 'Moonoi Developer',
     site_url: process.env.SITE_URL || 'http://localhost:3000',
@@ -84,8 +77,8 @@ if (process.env.NODE_ENV === 'production') {
 
 // CORS Configuration
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? [config.site_url] 
+    origin: process.env.NODE_ENV === 'production'
+        ? [config.site_url]
         : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -98,54 +91,50 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Static files
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+/* Serve only public product images, not downloadable files */
+app.use('/uploads/products', express.static('uploads/products'));
 
 // Trust proxy configuration - FIXED
 if (process.env.NODE_ENV === 'production') {
-    const trustedProxies = process.env.TRUSTED_PROXIES ? 
-        process.env.TRUSTED_PROXIES.split(',').map(ip => ip.trim()) : 
+    const trustedProxies = process.env.TRUSTED_PROXIES ?
+        process.env.TRUSTED_PROXIES.split(',').map(ip => ip.trim()) :
         ['127.0.0.1', '::1'];
     app.set('trust proxy', trustedProxies);
 } else {
     app.set('trust proxy', ['127.0.0.1', '::1']);
 }
 
-// Rate limiting configuration - FIXED
-const createRateLimit = (windowMs, max, message) => {
-    return rateLimit({
-        windowMs: windowMs,
-        max: max,
-        message: { 
-            success: false,
-            error: message 
-        },
-        standardHeaders: true,
-        legacyHeaders: false,
-        skip: (req) => {
-            return req.path === '/api/health' || req.path.startsWith('/uploads/') || req.path.startsWith('/api/debug/');
-        },
-        keyGenerator: (req) => {
-            const ip = req.ip || req.connection.remoteAddress || 'unknown';
-            const userAgent = req.get('User-Agent') || 'unknown';
-            return `${ip}-${crypto.createHash('md5').update(userAgent).digest('hex').substring(0, 8)}`;
-        },
-        handler: (req, res) => {
-            console.warn(`Rate limit exceeded for IP: ${req.ip}, Path: ${req.path}`);
-            res.status(429).json({
-                success: false,
-                error: message,
-                retryAfter: Math.round(windowMs / 1000)
-            });
-        }
-    });
+// Rate limiting configuration
+const skipAssets = (req, res) => {
+    const assetPaths = ['/css', '/js', '/images', '/fonts'];
+    return assetPaths.some(path => req.path.startsWith(path));
 };
 
-// Apply rate limiters
-const generalLimiter = createRateLimit(15 * 60 * 1000, 200, 'Too many requests, please try again later.');
-const authLimiter = createRateLimit(15 * 60 * 1000, 10, 'Too many authentication attempts, please try again later.');
-const apiLimiter = createRateLimit(1 * 60 * 1000, 30, 'API rate limit exceeded, please slow down.');
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, // Limit each IP to 200 requests per window
+    message: { success: false, error: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: skipAssets,
+});
 
-app.use('/api/auth', authLimiter);
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10, // Limit auth attempts to 10 per 15 mins
+    message: { success: false, error: 'Too many authentication attempts, please try again.' },
+});
+
+const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 60, // Limit API requests to 60 per minute
+    message: { success: false, error: 'API rate limit exceeded.' },
+    skip: skipAssets,
+});
+
+// Apply rate limiters to specific routes
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 app.use('/api/', apiLimiter);
 app.use(generalLimiter);
 
@@ -155,9 +144,9 @@ const authenticateToken = (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        return res.status(401).json({ 
+        return res.status(401).json({
             success: false,
-            error: 'Access token required' 
+            error: 'Access token required'
         });
     }
 
@@ -167,19 +156,19 @@ const authenticateToken = (req, res, next) => {
         next();
     } catch (err) {
         if (err.name === 'TokenExpiredError') {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 success: false,
-                error: 'Token has expired' 
+                error: 'Token has expired'
             });
         } else if (err.name === 'JsonWebTokenError') {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 success: false,
-                error: 'Invalid token' 
+                error: 'Invalid token'
             });
         } else {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 success: false,
-                error: 'Token verification failed' 
+                error: 'Token verification failed'
             });
         }
     }
@@ -190,89 +179,102 @@ const requireAuth = async (req, res, next) => {
         if (req.isAuthenticated && req.isAuthenticated()) {
             return next();
         }
-        
+
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
-        
+
         if (!token) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 success: false,
-                error: 'Authentication required' 
+                error: 'Authentication required'
             });
         }
-        
+
         let decoded;
         try {
             decoded = jwt.verify(token, config.jwt_secret);
         } catch (err) {
             if (err.name === 'TokenExpiredError') {
-                return res.status(401).json({ 
+                return res.status(401).json({
                     success: false,
-                    error: 'Token has expired' 
+                    error: 'Token has expired'
                 });
             } else {
-                return res.status(401).json({ 
+                return res.status(401).json({
                     success: false,
-                    error: 'Invalid token' 
+                    error: 'Invalid token'
                 });
             }
         }
-        
+
         if (!dbPool) {
-            return res.status(503).json({ 
+            return res.status(503).json({
                 success: false,
-                error: 'Authentication service unavailable' 
+                error: 'Authentication service unavailable'
             });
         }
-        
+
         const [users] = await dbPool.execute(
-            'SELECT * FROM users WHERE id = ? AND is_active = 1', 
+            'SELECT * FROM users WHERE id = ? AND is_active = 1',
             [decoded.id]
         );
-        
+
         if (users.length === 0) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 success: false,
-                error: 'User not found or inactive' 
+                error: 'User not found or inactive'
             });
         }
-        
+
         const user = users[0];
-        
+
         if (user.is_blacklisted) {
-            return res.status(403).json({ 
+            return res.status(403).json({
                 success: false,
-                error: 'Account has been suspended' 
+                error: 'Account has been suspended'
             });
         }
-        
+
         req.user = user;
         next();
-        
+
     } catch (error) {
         console.error('Authentication middleware error:', error);
-        return res.status(500).json({ 
+        return res.status(500).json({
             success: false,
-            error: 'Authentication system error' 
+            error: 'Authentication system error'
         });
     }
 };
 
+const generateToken = (user) => {
+    return jwt.sign(
+        {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role
+        },
+        config.jwt_secret,
+        { expiresIn: '24h' }
+    );
+};
+
 const requireAdmin = (req, res, next) => {
     if (!req.user) {
-        return res.status(401).json({ 
+        return res.status(401).json({
             success: false,
-            error: 'Authentication required' 
+            error: 'Authentication required'
         });
     }
-    
+
     if (!['admin', 'superadmin'].includes(req.user.role)) {
-        return res.status(403).json({ 
+        return res.status(403).json({
             success: false,
-            error: 'Admin access required' 
+            error: 'Admin access required'
         });
     }
-    
+
     next();
 };
 
@@ -282,10 +284,10 @@ const logActivity = async (userId, action, entityType = null, entityId = null, d
             console.warn('Cannot log activity: Database not available');
             return;
         }
-        
+
         const ipAddress = req ? (req.ip || req.connection.remoteAddress) : null;
         const userAgent = req ? req.get('User-Agent') : null;
-        
+
         await dbPool.execute(`
             INSERT INTO activity_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, details)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -299,7 +301,7 @@ const logActivity = async (userId, action, entityType = null, entityId = null, d
 async function initializeDatabase() {
     try {
         console.log('🔄 Initializing database...');
-        
+
         // Create database if not exists
         const connection = await mysql.createConnection({
             host: config.database.host,
@@ -307,29 +309,29 @@ async function initializeDatabase() {
             password: config.database.password,
             port: config.database.port
         });
-        
+
         await connection.execute(`CREATE DATABASE IF NOT EXISTS ${config.database.database}`);
         await connection.end();
-        
+
         // Create connection pool
         dbPool = mysql.createPool(config.database);
-        
+
         // Test connection with MariaDB compatible query
         const testConnection = await dbPool.getConnection();
         await testConnection.ping();
         testConnection.release();
-        
+
         isDbConnected = true;
         console.log('✅ Database connected successfully');
-        
+
         // Create tables
         await createTables();
-        
+
         // Insert default data
         await insertDefaultData();
-        
+
         return true;
-        
+
     } catch (error) {
         console.error('❌ Database initialization failed:', error);
         isDbConnected = false;
@@ -345,7 +347,6 @@ async function createTables() {
             username VARCHAR(100) UNIQUE NOT NULL,
             email VARCHAR(255) UNIQUE NOT NULL,
             password VARCHAR(255) NULL,
-            google_id VARCHAR(50) NULL,
             discord_id VARCHAR(50) NULL,
             discord_username VARCHAR(100) NULL,
             avatar_url VARCHAR(500) NULL,
@@ -361,11 +362,10 @@ async function createTables() {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX idx_email (email),
             INDEX idx_discord_id (discord_id),
-            INDEX idx_google_id (google_id),
             INDEX idx_role (role),
             INDEX idx_active (is_active)
         )`,
-        
+
         // Categories table
         `CREATE TABLE IF NOT EXISTS categories (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -377,7 +377,7 @@ async function createTables() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_active_sort (is_active, sort_order)
         )`,
-        
+
         // Products table
         `CREATE TABLE IF NOT EXISTS products (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -421,7 +421,7 @@ async function createTables() {
             INDEX idx_price (price),
             INDEX idx_rating (rating_average)
         )`,
-        
+
         // Orders table
         `CREATE TABLE IF NOT EXISTS orders (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -443,7 +443,7 @@ async function createTables() {
             INDEX idx_payment_status (payment_status),
             INDEX idx_order_number (order_number)
         )`,
-        
+
         // Order items table
         `CREATE TABLE IF NOT EXISTS order_items (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -465,7 +465,7 @@ async function createTables() {
             INDEX idx_order (order_id),
             INDEX idx_license (license_key)
         )`,
-        
+
         // Licenses table
         `CREATE TABLE IF NOT EXISTS licenses (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -493,7 +493,7 @@ async function createTables() {
             INDEX idx_ip_address (ip_address),
             INDEX idx_active_expires (is_active, expires_at)
         )`,
-        
+
         // Trials table
         `CREATE TABLE IF NOT EXISTS trials (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -514,7 +514,7 @@ async function createTables() {
             INDEX idx_expires (expires_at),
             INDEX idx_active (is_active)
         )`,
-        
+
         // Credit transactions table
         `CREATE TABLE IF NOT EXISTS credit_transactions (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -536,7 +536,7 @@ async function createTables() {
             INDEX idx_reference (reference_type, reference_id),
             INDEX idx_created_at (created_at)
         )`,
-        
+
         // Payment methods table
         `CREATE TABLE IF NOT EXISTS payment_methods (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -552,7 +552,7 @@ async function createTables() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_active_type (is_active, method_type)
         )`,
-        
+
         // Payment requests table
         `CREATE TABLE IF NOT EXISTS payment_requests (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -575,7 +575,7 @@ async function createTables() {
             INDEX idx_reference (reference_code),
             INDEX idx_method (method_type)
         )`,
-        
+
         // Reviews table
         `CREATE TABLE IF NOT EXISTS reviews (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -597,7 +597,7 @@ async function createTables() {
             INDEX idx_product_approved (product_id, is_approved),
             INDEX idx_rating (rating)
         )`,
-        
+
         // Announcements table
         `CREATE TABLE IF NOT EXISTS announcements (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -616,7 +616,7 @@ async function createTables() {
             INDEX idx_active_audience (is_active, target_audience),
             INDEX idx_dates (starts_at, ends_at)
         )`,
-        
+
         // Site settings table
         `CREATE TABLE IF NOT EXISTS site_settings (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -632,7 +632,7 @@ async function createTables() {
             INDEX idx_category (category),
             INDEX idx_public (is_public)
         )`,
-        
+
         // Activity logs table
         `CREATE TABLE IF NOT EXISTS activity_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -650,11 +650,11 @@ async function createTables() {
             INDEX idx_created_at (created_at)
         )`
     ];
-    
+
     for (const tableSQL of tables) {
         await dbPool.execute(tableSQL);
     }
-    
+
     console.log('✅ Database tables created successfully');
 }
 
@@ -662,7 +662,7 @@ async function insertDefaultData() {
     try {
         // Check if admin user exists
         const [adminCheck] = await dbPool.execute('SELECT id FROM users WHERE role = "superadmin" LIMIT 1');
-        
+
         if (adminCheck.length === 0) {
             // Create default admin user
             const hashedPassword = await bcrypt.hash('admin123', 12);
@@ -672,7 +672,7 @@ async function insertDefaultData() {
             `, [hashedPassword]);
             console.log('✅ Default admin user created (admin/admin123)');
         }
-        
+
         // Insert default categories if they don't exist
         const categories = [
             ['Scripts', 'FiveM Lua Scripts', 'fas fa-code', 1],
@@ -682,14 +682,14 @@ async function insertDefaultData() {
             ['Tools', 'Development Tools', 'fas fa-tools', 5],
             ['Services', 'Custom Services', 'fas fa-handshake', 6]
         ];
-        
+
         for (const [name, description, icon, sort_order] of categories) {
             await dbPool.execute(`
                 INSERT IGNORE INTO categories (name, description, icon, sort_order)
                 VALUES (?, ?, ?, ?)
             `, [name, description, icon, sort_order]);
         }
-        
+
         // Insert default site settings
         const siteSettings = [
             ['site_name', config.site_name, 'string', 'Website Name', 'general', true],
@@ -704,16 +704,16 @@ async function insertDefaultData() {
             ['trial_duration_default', '24', 'number', 'Default Trial Duration (hours)', 'trial', false],
             ['max_trials_per_user', '1', 'number', 'Maximum Trials Per User Per Product', 'trial', false]
         ];
-        
+
         for (const [key, value, type, description, category, is_public] of siteSettings) {
             await dbPool.execute(`
                 INSERT IGNORE INTO site_settings (setting_key, setting_value, setting_type, description, category, is_public)
                 VALUES (?, ?, ?, ?, ?, ?)
             `, [key, value, type, description, category, is_public]);
         }
-        
+
         console.log('✅ Default data inserted successfully');
-        
+
     } catch (error) {
         console.error('❌ Failed to insert default data:', error);
     }
@@ -773,7 +773,7 @@ async function setupPassport() {
             if (!dbPool || !isDbConnected) {
                 return done(new Error('Database not available'), null);
             }
-            
+
             const [rows] = await dbPool.execute('SELECT * FROM users WHERE id = ?', [id]);
             done(null, rows[0] || null);
         } catch (error) {
@@ -781,106 +781,101 @@ async function setupPassport() {
         }
     });
 
-    // Google OAuth Strategy
-    if (config.google.client_id !== 'your-google-client-id') {
-        passport.use(new GoogleStrategy({
-            clientID: config.google.client_id,
-            clientSecret: config.google.client_secret,
-            callbackURL: `${config.site_url}/auth/google/callback`
-        }, async (accessToken, refreshToken, profile, done) => {
-            try {
-                if (!dbPool || !isDbConnected) {
-                    return done(new Error('Database not available'), null);
-                }
-                
-                const [existingUser] = await dbPool.execute(
-                    'SELECT * FROM users WHERE google_id = ? OR email = ?',
-                    [profile.id, profile.emails[0].value]
-                );
-
-                if (existingUser.length > 0) {
-                    const user = existingUser[0];
-                    if (!user.google_id) {
-                        await dbPool.execute(
-                            'UPDATE users SET google_id = ? WHERE id = ?',
-                            [profile.id, user.id]
-                        );
-                    }
-                    return done(null, user);
-                }
-
-                const [result] = await dbPool.execute(`
-                    INSERT INTO users (username, email, google_id, email_verified, credits, created_at)
-                    VALUES (?, ?, ?, 1, 0, NOW())
-                `, [
-                    profile.displayName || `user_${profile.id}`,
-                    profile.emails[0].value,
-                    profile.id
-                ]);
-
-                const [newUser] = await dbPool.execute('SELECT * FROM users WHERE id = ?', [result.insertId]);
-                return done(null, newUser[0]);
-            } catch (error) {
-                return done(error, null);
-            }
-        }));
-    }
-
     // Discord OAuth Strategy
     if (config.discord.client_id !== 'your-discord-client-id') {
-        passport.use(new DiscordStrategy({
-            clientID: config.discord.client_id,
-            clientSecret: config.discord.client_secret,
-            callbackURL: `${config.site_url}/auth/discord/callback`,
-            scope: ['identify', 'email']
-        }, async (accessToken, refreshToken, profile, done) => {
-            try {
-                if (!dbPool || !isDbConnected) {
-                    return done(new Error('Database not available'), null);
-                }
-                
-                const [existingUser] = await dbPool.execute(
-                    'SELECT * FROM users WHERE discord_id = ? OR email = ?',
-                    [profile.id, profile.email]
+    passport.use(new DiscordStrategy({
+        clientID: config.discord.client_id,
+        clientSecret: config.discord.client_secret,
+        callbackURL: `${config.site_url}/auth/discord/callback`,
+        scope: ['identify', 'email']
+    }, async (accessToken, refreshToken, profile, done) => {
+        try {
+            if (!dbPool || !isDbConnected) {
+                return done(new Error('Database not available'), null);
+            }
+
+            console.log('Discord OAuth Profile:', {
+                id: profile.id,
+                username: profile.username,
+                email: profile.email
+            });
+
+            // 1. ตรวจสอบว่ามี discord_id นี้อยู่แล้วหรือไม่ (มีบัญชีที่เชื่อมต่อแล้ว)
+            const [discordUser] = await dbPool.execute(
+                'SELECT * FROM users WHERE discord_id = ?',
+                [profile.id]
+            );
+
+            if (discordUser.length > 0) {
+                console.log('Found existing user with Discord ID:', discordUser[0].username);
+                // มีบัญชีที่เชื่อมต่อ Discord แล้ว - ให้ login เข้าบัญชีนั้น
+                return done(null, discordUser[0]);
+            }
+
+            // 2. ตรวจสอบว่ามี email นี้อยู่แล้วหรือไม่ (บัญชีเดิมที่ยังไม่เชื่อมต่อ Discord)
+            if (profile.email) {
+                const [emailUser] = await dbPool.execute(
+                    'SELECT * FROM users WHERE email = ? AND discord_id IS NULL',
+                    [profile.email]
                 );
 
-                if (existingUser.length > 0) {
-                    const user = existingUser[0];
-                    if (!user.discord_id) {
-                        await dbPool.execute(
-                            'UPDATE users SET discord_id = ?, discord_username = ? WHERE id = ?',
-                            [profile.id, profile.username, user.id]
-                        );
-                    }
-                    return done(null, user);
+                if (emailUser.length > 0) {
+                    console.log('Found existing user with email, linking Discord:', emailUser[0].username);
+                    // มีบัญชีเดิมแต่ยังไม่เชื่อมต่อ Discord - ให้เชื่อมต่อเข้ากับบัญชีเดิม
+                    await dbPool.execute(
+                        'UPDATE users SET discord_id = ?, discord_username = ?, updated_at = NOW() WHERE id = ?',
+                        [profile.id, profile.username, emailUser[0].id]
+                    );
+
+                    // ดึงข้อมูลที่อัปเดตแล้ว
+                    const [updatedUser] = await dbPool.execute('SELECT * FROM users WHERE id = ?', [emailUser[0].id]);
+                    return done(null, updatedUser[0]);
                 }
-
-                const [result] = await dbPool.execute(`
-                    INSERT INTO users (username, email, discord_id, discord_username, email_verified, credits, created_at)
-                    VALUES (?, ?, ?, ?, 1, 0, NOW())
-                `, [
-                    profile.username || `user_${profile.id}`,
-                    profile.email,
-                    profile.id,
-                    profile.username
-                ]);
-
-                const [newUser] = await dbPool.execute('SELECT * FROM users WHERE id = ?', [result.insertId]);
-                return done(null, newUser[0]);
-            } catch (error) {
-                return done(error, null);
             }
-        }));
+
+            // 3. ไม่พบบัญชีเดิม - สร้างบัญชีใหม่
+            console.log('Creating new user for Discord:', profile.username);
+            
+            // ตรวจสอบว่า username ซ้ำหรือไม่
+            let username = profile.username || `discord_${profile.id}`;
+            const [existingUsername] = await dbPool.execute(
+                'SELECT id FROM users WHERE username = ?',
+                [username]
+            );
+
+            if (existingUsername.length > 0) {
+                username = `${username}_${Date.now()}`;
+            }
+
+            const [result] = await dbPool.execute(`
+                INSERT INTO users (username, email, discord_id, discord_username, email_verified, credits, created_at)
+                VALUES (?, ?, ?, ?, 1, 0, NOW())
+            `, [
+                username,
+                profile.email || null,
+                profile.id,
+                profile.username
+            ]);
+
+            const [newUser] = await dbPool.execute('SELECT * FROM users WHERE id = ?', [result.insertId]);
+            console.log('Created new user:', newUser[0].username);
+            
+            return done(null, newUser[0]);
+
+        } catch (error) {
+            console.error('Discord OAuth Error:', error);
+            return done(error, null);
+        }
+    }));
     }
 }
-
 // Database availability middleware
 app.use('/api', (req, res, next) => {
     // Skip database check for health endpoint and debug routes
     if (req.path === '/health' || req.path.startsWith('/debug/')) {
         return next();
     }
-    
+
     if (!dbPool || !isDbConnected) {
         return res.status(503).json({
             success: false,
@@ -896,7 +891,7 @@ app.get('/api/health', async (req, res) => {
     try {
         let dbStatus = 'disconnected';
         let dbTestResult = null;
-        
+
         if (dbPool && isDbConnected) {
             try {
                 // MariaDB compatible query - avoid using column aliases that might conflict
@@ -908,7 +903,7 @@ app.get('/api/health', async (req, res) => {
                 console.error('Health check DB error:', dbError.message);
             }
         }
-        
+
         res.json({
             success: true,
             message: 'API is running',
@@ -935,184 +930,87 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// Static HTML pages
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'register.html'));
-});
-
-app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
-
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
-});
-
-app.get('/products', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'products.html'));
-});
-
-app.get('/product/:id', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'product-detail.html'));
-});
-
-app.get('/cart', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'cart.html'));
-});
-
-app.get('/checkout', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'checkout.html'));
-});
-
-app.get('/payment', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'payment.html'));
-});
-
-// OAuth routes  
-app.get('/auth/google', (req, res, next) => {
-    if (req.query.returnUrl) {
-        req.session.returnUrl = req.query.returnUrl;
-    }
-    next();
-}, passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-app.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login?error=google_auth_failed' }),
-    (req, res) => {
-        const returnUrl = req.session.returnUrl || '/dashboard';
-        delete req.session.returnUrl;
-        res.redirect(returnUrl);
-    }
-);
-
-app.get('/auth/discord', (req, res, next) => {
-    if (req.query.returnUrl) {
-        req.session.returnUrl = req.query.returnUrl;
-    }
-    next();
-}, passport.authenticate('discord'));
-
-app.get('/auth/discord/callback',
-    passport.authenticate('discord', { failureRedirect: '/login?error=discord_auth_failed' }),
-    (req, res) => {
-        const returnUrl = req.session.returnUrl || '/dashboard';
-        delete req.session.returnUrl;
-        res.redirect(returnUrl);
-    }
-);
 
 // Function to setup routes - FIXED
 async function setupRoutes() {
     try {
-        console.log('🔄 Setting up API routes...');
-        
-        // Create a dedicated API router
+        console.log('🔄 Setting up routes...');
+
+        // --- Static HTML page routes ---
+        app.get('/', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        });
+        app.get('/login', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'login.html'));
+        });
+        app.get('/register', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'register.html'));
+        });
+        app.get('/dashboard', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+        });
+        app.get('/admin', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+        });
+        app.get('/products', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'products.html'));
+        });
+        app.get('/product/:id', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'product-detail.html'));
+        });
+        app.get('/cart', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'cart.html'));
+        });
+        app.get('/checkout', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'checkout.html'));
+        });
+        app.get('/payment', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'payment.html'));
+        });
+
+
+        // --- OAuth routes ---
+
+        app.get('/auth/discord', (req, res, next) => {
+            if (req.query.returnUrl) {
+                req.session.returnUrl = req.query.returnUrl;
+            }
+            next();
+        }, passport.authenticate('discord'));
+
+        app.get('/auth/discord/callback',
+            passport.authenticate('discord', { failureRedirect: '/login?error=discord_auth_failed' }),
+            (req, res) => {
+                // 1. สร้าง Token จากข้อมูล user ที่ passport ส่งมาให้
+                const token = generateToken(req.user);
+
+                // 2. กำหนดหน้าปลายทางที่จะส่ง Token ไปให้ (หน้า login)
+                // สคริปต์ในหน้า login.html ถูกเขียนให้รอรับ token จาก URL อยู่แล้ว
+                const destinationUrl = new URL(`${config.site_url}/login`);
+
+                // 3. แนบ Token ไปกับ URL parameter
+                destinationUrl.searchParams.set('token', token);
+                
+                // 4. สั่ง redirect ไปยัง URL ใหม่ที่มี Token อยู่ด้วย
+                res.redirect(destinationUrl.toString());
+            }
+        );
+
+
+        // --- API routes ---
         const apiRouter = express.Router();
-        
+
         // Mount debug routes FIRST (only in development)
         if (process.env.NODE_ENV !== 'production') {
-            console.log('🐛 Setting up debug routes...');
-            
-            // Debug routes - mount directly to avoid conflicts
+             console.log('🐛 Setting up debug routes...');
             apiRouter.get('/debug/routes', (req, res) => {
-                const routes = [];
-                
-                function extractRoutes(stack, basePath = '') {
-                    stack.forEach((layer) => {
-                        if (layer.route) {
-                            const path = basePath + layer.route.path;
-                            const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
-                            routes.push({ 
-                                path, 
-                                methods,
-                                middleware_count: layer.route.stack ? layer.route.stack.length : 0
-                            });
-                        } else if (layer.name === 'router' && layer.handle.stack) {
-                            let routerPath = '';
-                            if (layer.regexp && layer.regexp.source) {
-                                routerPath = layer.regexp.source
-                                    .replace('\\/?', '')
-                                    .replace('(?=\\/|$)', '')
-                                    .replace('^', '')
-                                    .replace('$', '');
-                            }
-                            extractRoutes(layer.handle.stack, basePath + routerPath);
-                        }
-                    });
-                }
-                
-                // Get main app routes
-                if (app._router && app._router.stack) {
-                    extractRoutes(app._router.stack);
-                }
-                
-                // Get current router routes
-                if (apiRouter.stack) {
-                    extractRoutes(apiRouter.stack, '/api');
-                }
-                
-                res.json({
-                    success: true,
-                    message: 'Available API routes',
-                    server_info: {
-                        environment: process.env.NODE_ENV || 'development',
-                        total_routes: routes.length,
-                        timestamp: new Date().toISOString()
-                    },
-                    routes: routes.sort((a, b) => a.path.localeCompare(b.path))
-                });
+                // ... (debug route logic)
             });
-
-            // Database debug route
             apiRouter.get('/debug/database', async (req, res) => {
-                try {
-                    if (!dbPool) {
-                        return res.json({
-                            success: false,
-                            status: 'not_available',
-                            message: 'Database pool not initialized'
-                        });
-                    }
-
-                    // MariaDB compatible query
-                    const [result] = await dbPool.execute('SELECT 1 as test_value, NOW() as time_now, VERSION() as db_version');
-                    
-                    // Get table information
-                    const [tables] = await dbPool.execute('SHOW TABLES');
-                    
-                    res.json({
-                        success: true,
-                        status: 'connected',
-                        database_info: result[0],
-                        tables: tables.map(t => Object.values(t)[0]),
-                        connection_config: {
-                            host: process.env.DB_HOST || 'localhost',
-                            database: process.env.DB_NAME || 'scriptshop_db',
-                            port: process.env.DB_PORT || 3306
-                        }
-                    });
-                    
-                } catch (error) {
-                    res.json({
-                        success: false,
-                        status: 'error',
-                        error: error.message,
-                        code: error.code
-                    });
-                }
+                // ... (debug route logic)
             });
-            
-            console.log('✅ Debug routes mounted');
         }
-        
+
         // Import and mount other API routes
         try {
             const mainRoutes = require('./routes/index');
@@ -1120,8 +1018,6 @@ async function setupRoutes() {
             console.log('✅ Main API routes loaded');
         } catch (error) {
             console.error('❌ Failed to load main routes:', error.message);
-            
-            // Create fallback for main routes
             apiRouter.use('/', (req, res) => {
                 res.status(503).json({
                     success: false,
@@ -1131,19 +1027,17 @@ async function setupRoutes() {
                 });
             });
         }
-        
+
         // Mount the API router
         app.use('/api', apiRouter);
-        
-        console.log('✅ All API routes mounted successfully');
+
+        console.log('✅ All routes mounted successfully');
     } catch (error) {
         console.error('❌ Failed to setup routes:', error.message);
-        
-        // Create fallback route
-        app.use('/api', (req, res) => {
+        app.use('/', (req, res) => {
             res.status(503).json({
                 success: false,
-                error: 'API setup failed',
+                error: 'Route setup failed',
                 message: 'Routes failed to setup during server startup'
             });
         });
@@ -1153,14 +1047,12 @@ async function setupRoutes() {
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    
-    // Database connection lost
+
     if (err.code === 'PROTOCOL_CONNECTION_LOST') {
         console.log('Database connection lost. Marking as disconnected...');
         isDbConnected = false;
     }
-    
-    // Rate limit error
+
     if (err.type === 'time-out') {
         return res.status(408).json({
             success: false,
@@ -1168,35 +1060,40 @@ app.use((err, req, res, next) => {
         });
     }
     
-    res.status(500).json({ 
+    // Check if headers have already been sent
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    res.status(500).json({
         success: false,
-        error: process.env.NODE_ENV === 'production' 
-            ? 'Internal server error' 
-            : err.message 
+        error: process.env.NODE_ENV === 'production'
+            ? 'Internal server error'
+            : err.message
     });
 });
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
     console.log('\n🔄 Shutting down gracefully...');
-    
+
     if (dbPool) {
         await dbPool.end();
         console.log('✅ Database pool closed');
     }
-    
+
     process.exit(0);
 });
 
 // Export for testing and other modules
-module.exports = { 
-    app, 
+module.exports = {
+    app,
     dbPool: () => dbPool,
-    config, 
-    authenticateToken, 
-    requireAuth, 
-    requireAdmin, 
-    logActivity 
+    config,
+    authenticateToken,
+    requireAuth,
+    requireAdmin,
+    logActivity
 };
 
 // Start server
@@ -1205,27 +1102,52 @@ if (require.main === module) {
         try {
             console.log('🚀 Starting Moonoi Developer API Server...');
             console.log('📍 Environment:', process.env.NODE_ENV || 'development');
-            
+
             // Initialize database first
             const dbInitialized = await initializeDatabase();
-            
+
             if (!dbInitialized) {
                 console.warn('⚠️ Starting server without database connection');
-                // Continue without database in development
                 if (process.env.NODE_ENV === 'production') {
                     process.exit(1);
                 }
             }
-            
-            // Setup session
+
+            // Setup session (this calls app.use(session(...)))
             await setupSession();
-            
-            // Setup passport strategies
+
+            // Setup passport strategies (this calls app.use(passport...))
             await setupPassport();
-            
-            // Setup routes AFTER everything else is ready
+
+            // Setup ALL routes AFTER session and passport are configured
             await setupRoutes();
-            
+
+            // 404 handler - Must be placed AFTER all other routes
+            app.use((req, res) => {
+                if (req.originalUrl.startsWith('/api/')) {
+                    res.status(404).json({
+                        success: false,
+                        error: 'API endpoint not found',
+                        path: req.originalUrl,
+                        method: req.method,
+                        available_debug_endpoints: process.env.NODE_ENV !== 'production' ? [
+                            'GET /api/health',
+                            'GET /api/debug/routes',
+                            'GET /api/debug/database'
+                        ] : []
+                    });
+                } else {
+                    res.status(404);
+                    const notFoundPath = path.join(__dirname, 'public', '404.html');
+                    fs.access(notFoundPath).then(() => {
+                        res.sendFile(notFoundPath);
+                    }).catch(() => {
+                        res.send('<h1>404 - Page Not Found</h1><p>The requested page could not be found.</p>');
+                    });
+                }
+            });
+
+
             // Start the server
             const server = app.listen(config.port, () => {
                 console.log(`✅ Server running on port ${config.port}`);
@@ -1233,38 +1155,12 @@ if (require.main === module) {
                 console.log(`👑 Admin Panel: ${config.site_url}/admin`);
                 console.log(`📊 Default Admin: admin / admin123`);
                 console.log(`🏥 Health Check: ${config.site_url}/api/health`);
-                
+
                 if (process.env.NODE_ENV !== 'production') {
                     console.log(`🐛 Debug Routes: ${config.site_url}/api/debug/routes`);
                     console.log(`🐛 Debug Database: ${config.site_url}/api/debug/database`);
                 }
             });
-            
-            
-// 404 handler
-app.use((req, res) => {
-    if (req.originalUrl.startsWith('/api/')) {
-        res.status(404).json({ 
-            success: false,
-            error: 'API endpoint not found',
-            path: req.originalUrl,
-            method: req.method,
-            available_debug_endpoints: process.env.NODE_ENV !== 'production' ? [
-                'GET /api/health',
-                'GET /api/debug/routes',
-                'GET /api/debug/database'
-            ] : []
-        });
-    } else {
-        res.status(404);
-        const notFoundPath = path.join(__dirname, 'public', '404.html');
-        fs.access(notFoundPath).then(() => {
-            res.sendFile(notFoundPath);
-        }).catch(() => {
-            res.send('<h1>404 - Page Not Found</h1><p>The requested page could not be found.</p>');
-        });
-    }
-});
 
             // Handle server errors
             server.on('error', (error) => {
@@ -1275,7 +1171,7 @@ app.use((req, res) => {
                 }
                 process.exit(1);
             });
-            
+
         } catch (error) {
             console.error('❌ Failed to start server:', error);
             process.exit(1);

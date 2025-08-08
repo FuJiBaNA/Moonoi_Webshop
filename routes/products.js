@@ -1,4 +1,4 @@
-// routes/products.js - Product Management Routes (แก้ไขการเข้าถึงฐานข้อมูล)
+// routes/products.js - Product Management Routes 
 const express = require('express');
 
 const router = express.Router();

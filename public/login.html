@@ -15,7 +15,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="/css/style.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
+<main> class="bg-light">
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
@@ -101,7 +102,10 @@
                                 <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="loginBtn">
                                     <i class="fas fa-sign-in-alt me-2"></i>เข้าสู่ระบบ
                                 </button>
-                            </form>
+                            <div class="mt-3 text-end">
+  <a href="/forgot-password.html">ลืมรหัสผ่าน?</a>
+</div>
+</form>
                             
                             <div class="text-center mb-3">
                                 <span class="text-muted">หรือ</span>
@@ -109,9 +113,6 @@
                             
                             <!-- OAuth Buttons -->
                             <div class="d-grid gap-2">
-                                <a href="/auth/google" class="btn btn-outline-danger">
-                                    <i class="fab fa-google me-2"></i>เข้าสู่ระบบด้วย Google
-                                </a>
                                 <a href="/auth/discord" class="btn btn-outline-primary">
                                     <i class="fab fa-discord me-2"></i>เข้าสู่ระบบด้วย Discord
                                 </a>
@@ -218,6 +219,83 @@
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         });
+
+        function handleOAuthCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const error = urlParams.get('error');
+    
+    if (token) {
+        console.log('OAuth token received, storing and redirecting...');
+        localStorage.setItem('authToken', token);
+        
+        // Clear URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        showAlert('เข้าสู่ระบบสำเร็จ', 'success');
+        
+        // Redirect after short delay
+        setTimeout(() => {
+            window.location.href = '/dashboard';
+        }, 1500);
+        
+    } else if (error) {
+        console.log('OAuth error:', error);
+        
+        let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ';
+        if (error === 'discord_auth_failed') {
+            errorMessage = 'ไม่สามารถเข้าสู่ระบบด้วย Discord ได้ กรุณาลองใหม่';
+        }
+        
+        showAlert(errorMessage, 'danger');
+        
+        // Clear URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+// เพิ่มการตรวจสอบ token validity
+async function validateToken() {
+    if (!authToken) return false;
+    
+    try {
+        const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        return response.ok;
+    } catch (error) {
+        console.error('Token validation error:', error);
+        return false;
+    }
+}
+
+// Auto refresh token ถ้าใกล้หมดอายุ
+async function refreshTokenIfNeeded() {
+    if (!authToken) return;
+    
+    try {
+        const response = await fetch('/api/auth/refresh-token', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.token) {
+                localStorage.setItem('authToken', data.token);
+                authToken = data.token;
+                console.log('Token refreshed successfully');
+            }
+        }
+    } catch (error) {
+        console.error('Token refresh error:', error);
+    }
+}
+
+// เรียก refresh token ทุก 20 นาที
+setInterval(refreshTokenIfNeeded, 20 * 60 * 1000);
     </script>
+</main>
 </body>
 </html>

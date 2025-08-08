@@ -1,4 +1,4 @@
-// routes/licenses.js - License Management and API Verification Routes (แก้ไขการเข้าถึงฐานข้อมูล)
+// routes/licenses.js - License Management and API Verification Routes 
 const express = require('express');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');

@@ -16,6 +16,7 @@
     <link href="/css/style.css" rel="stylesheet">
 </head>
 <body>
+<main>>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
@@ -361,6 +362,30 @@
   </div>
 </div>
 
+<div class="col-md-9 col-lg-10 py-4">
+                <div id="overview-content" class="tab-content active">
+                    </div>
+
+                <div id="orders-content" class="tab-content">
+                    </div>
+
+                <div id="licenses-content" class="tab-content">
+                    <h2 class="mb-4"><i class="fas fa-key me-2"></i>จัดการ License</h2>
+                    <div class="dashboard-card">
+                        <div id="licensesList">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">กำลังโหลด...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
+        </div>
+    </div>
+
 <div class="modal fade" id="changeIpModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -394,7 +419,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
     <script>
-        let currentUser = null;
+        // ใช้ window.currentUser แทน let currentUser เพื่อหลีกเลี่ยงการประกาศซ้ำ
+        window.currentUser = window.currentUser || null;
 
         // Tab switching
         document.querySelectorAll('[data-tab]').forEach(tab => {
@@ -437,6 +463,31 @@
                     break;
             }
         }
+
+        function clearUserData() {
+            window.currentUser = null;
+            localStorage.removeItem('authToken');
+            authToken = null;
+        }
+
+async function logout() {
+    if (!confirm('คุณต้องการออกจากระบบหรือไม่?')) return;
+    
+    try {
+        // เรียก logout API
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+    } catch (error) {
+        console.error('Logout API error:', error);
+        // ถึงแม้ API error ก็ให้ logout ใน client
+    } finally {
+        // Clear ข้อมูลและ redirect
+        clearUserData();
+        window.location.href = '/login';
+    }
+}        
 
         // Load overview data
         async function loadOverviewData() {
@@ -624,9 +675,9 @@
 
         // Load profile data
         async function loadProfileData() {
-            if (currentUser) {
-                document.getElementById('profileUsername').value = currentUser.username;
-                document.getElementById('profileEmail').value = currentUser.email;
+            if (window.currentUser) {
+                document.getElementById('profileUsername').value = window.currentUser.username;
+                document.getElementById('profileEmail').value = window.currentUser.email;
             }
         }
 
@@ -813,53 +864,87 @@
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', async function() {
-            // Check authentication
-            if (!authToken) {
-                window.location.href = '/login';
-                return;
+    // ตรวจสอบ authentication
+    if (!authToken) {
+        clearUserData();
+        window.location.href = '/login';
+        return;
+    }
+    
+    try {
+        // Get user info - ตรวจสอบให้แน่ใจว่าได้ user ที่ถูกต้อง
+        const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // ตรวจสอบว่า response มี user data
+            if (!data.success || !data.user) {
+                throw new Error('Invalid user data received');
             }
             
-            try {
-                // Get user info
-                const response = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    currentUser = data.user;
-                    
-                    // Update display
-                    document.getElementById('usernameDisplay').textContent = currentUser.username;
-                    document.getElementById('creditsDisplay').textContent = formatPrice(currentUser.credits);
-                    document.getElementById('accountUsername').textContent = currentUser.username;
-                    document.getElementById('accountEmail').textContent = currentUser.email;
-                    document.getElementById('memberSince').textContent = formatDate(currentUser.created_at);
-                    
-                    // Update Discord status
-                    if (currentUser.discord_id) {
-                        updateDiscordStatus({ username: currentUser.discord_username });
-                    }
-                    
-                    // Show admin menu if admin
-                    if (['admin', 'superadmin'].includes(currentUser.role)) {
-                        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
-                    }
-                    
-                    // Load initial data
-                    await loadOverviewData();
-                    
-                } else {
-                    localStorage.removeItem('authToken');
-                    authToken = null;
-                    window.location.href = '/login';
-                }
-                
-            } catch (error) {
-                console.error('Dashboard init error:', error);
-                window.location.href = '/login';
-            }
+            window.currentUser = data.user;
+            
+            // Log เพื่อ debug (ลบออกใน production)
+            console.log('Current user loaded:', {
+                id: window.currentUser.id,
+                username: window.currentUser.username,
+                email: window.currentUser.email
+            });
+            
+            // Update display - ใช้ข้อมูลที่แน่นอน
+            updateUserInterface(window.currentUser);
+            
+            // Load initial data
+            await loadOverviewData();
+            
+        } else if (response.status === 401) {
+            // Token expired หรือ invalid
+            console.log('Authentication failed, redirecting to login');
+            clearUserData();
+            window.location.href = '/login';
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+    } catch (error) {
+        console.error('Dashboard init error:', error);
+        clearUserData();
+        window.location.href = '/login';
+    }
+    });
+    // ฟังก์ชันสำหรับ update UI
+function updateUserInterface(user) {
+    // Basic user info
+    document.getElementById('usernameDisplay').textContent = user.username || 'Unknown';
+    document.getElementById('creditsDisplay').textContent = formatPrice(user.credits || 0);
+    document.getElementById('accountUsername').textContent = user.username || 'Unknown';
+    document.getElementById('accountEmail').textContent = user.email || 'Unknown';
+    document.getElementById('memberSince').textContent = formatDate(user.created_at);
+    
+    // Discord status
+    if (user.discord_id) {
+        updateDiscordStatus({ username: user.discord_username });
+    } else {
+        updateDiscordStatus(null);
+    }
+    
+    // Admin menu
+    if (['admin', 'superadmin'].includes(user.role)) {
+        document.querySelectorAll('.admin-only').forEach(el => {
+            el.style.display = 'block';
         });
+    }
+    
+    // Profile form
+    const profileUsername = document.getElementById('profileUsername');
+    const profileEmail = document.getElementById('profileEmail');
+    if (profileUsername) profileUsername.value = user.username || '';
+    if (profileEmail) profileEmail.value = user.email || '';
+}
     </script>
+</main>
 </body>
 </html>

@@ -14,6 +14,66 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="/css/style.css" rel="stylesheet">
+    
+    <style>
+        .amount-input {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: #dee2e6;
+        }
+        .step.active .step-number {
+            background: #0d6efd;
+            color: white;
+        }
+        .step.completed::after {
+            background: #198754;
+        }
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #dee2e6;
+            color: #6c757d;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .step-title {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .step.active .step-title {
+            color: #0d6efd;
+            font-weight: bold;
+        }
+        .slip-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -175,42 +235,122 @@
 
                             <!-- Bank Transfer -->
                             <div class="tab-pane fade" id="bank" role="tabpanel">
-                                <div class="alert alert-info">
-                                    <h6><i class="fas fa-info-circle me-2"></i>ข้อมูลบัญชีสำหรับโอนเงิน</h6>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <p class="mb-1"><strong>ธนาคาร:</strong> กสิกรไทย</p>
-                                            <p class="mb-1"><strong>เลขบัญชี:</strong> 123-4-56789-0</p>
-                                            <p class="mb-0"><strong>ชื่อบัญชี:</strong> Moonoi Developer</p>
-                                        </div>
+                                <!-- Step Indicator -->
+                                <div class="step-indicator">
+                                    <div class="step active" id="step1">
+                                        <div class="step-number">1</div>
+                                        <div class="step-title">กรอกจำนวนเงิน</div>
+                                    </div>
+                                    <div class="step" id="step2">
+                                        <div class="step-number">2</div>
+                                        <div class="step-title">โอนเงิน</div>
+                                    </div>
+                                    <div class="step" id="step3">
+                                        <div class="step-number">3</div>
+                                        <div class="step-title">อัปโหลดสลิป</div>
                                     </div>
                                 </div>
 
-                                <form id="bankTransferForm">
-                                    <div class="mb-3">
-                                        <label for="slipImage" class="form-label">
-                                            <i class="fas fa-image me-2"></i>รูปหลักฐานการโอนเงิน
-                                        </label>
-                                        <input type="file" class="form-control" id="slipImage" 
-                                               accept="image/jpeg,image/png,image/jpg" required>
-                                        <div class="form-text">อัปโหลดรูปสลิปการโอนเงิน (JPG, PNG เท่านั้น)</div>
+                                <!-- Step 1: Enter Amount -->
+                                <div id="amountStep">
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-info-circle me-2"></i>กรอกจำนวนเงินที่ต้องการเติม</h6>
+                                        <p class="mb-0">กรุณากรอกจำนวนเงินที่ต้องการเติม จากนั้นระบบจะแสดงข้อมูลบัญชีสำหรับโอนเงิน</p>
                                     </div>
 
-                                    <div class="mb-3">
-                                        <label for="qrcodeText" class="form-label">
-                                            <i class="fas fa-qrcode me-2"></i>ข้อความใน QR Code
-                                        </label>
-                                        <textarea class="form-control" id="qrcodeText" rows="3" 
-                                                  placeholder="คัดลอกข้อความจาก QR Code ในสลิปมาใส่ที่นี่" required></textarea>
-                                        <div class="form-text">สแกน QR Code ในสลิป แล้วคัดลอกข้อความทั้งหมดมาใส่</div>
+                                    <form id="amountForm">
+                                        <div class="mb-3">
+                                            <label for="transferAmount" class="form-label">
+                                                <i class="fas fa-money-bill me-2"></i>จำนวนเงิน (บาท)
+                                            </label>
+                                            <input type="number" class="form-control amount-input" id="transferAmount" 
+                                                   placeholder="0" min="10" max="50000" required>
+                                            <div class="form-text">จำนวนเงินขั้นต่ำ 10 บาท ขั้นสูงสุด 50,000 บาท</div>
+                                        </div>
+
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary btn-lg">
+                                                <i class="fas fa-arrow-right me-2"></i>ดำเนินการต่อ
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Step 2: Bank Details & Transfer -->
+                                <div id="bankDetailsStep" style="display: none;">
+                                    <div class="alert alert-success">
+                                        <h6><i class="fas fa-university me-2"></i>ข้อมูลบัญชีสำหรับโอนเงิน</h6>
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <p class="mb-1"><strong>ธนาคาร:</strong> กสิกรไทย</p>
+                                                <p class="mb-1"><strong>เลขบัญชี:</strong> 123-4-56789-0</p>
+                                                <p class="mb-1"><strong>ชื่อบัญชี:</strong> Moonoi Developer</p>
+                                                <p class="mb-0"><strong>จำนวนที่ต้องโอน:</strong> 
+                                                    <span class="badge bg-warning text-dark fs-6" id="displayAmount">฿0</span>
+                                                </p>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjZjhmOWZhIi8+Cjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjNmM3NTdkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5RUiBDb2RlPC90ZXh0Pgo8L3N2Zz4=" 
+                                                     alt="QR Code" class="img-fluid" style="max-width: 80px;">
+                                                <p class="small text-muted mt-1">QR Code สำหรับโอนเงิน</p>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div class="d-grid">
-                                        <button type="submit" class="btn btn-primary btn-lg" id="bankTransferBtn">
-                                            <i class="fas fa-university me-2"></i>ยืนยันการโอนเงิน
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fas fa-exclamation-triangle me-2"></i>ข้อควรระวัง</h6>
+                                        <ul class="mb-0">
+                                            <li>กรุณาโอนเงินตามจำนวนที่ระบุอย่างแม่นยำ</li>
+                                            <li>ใช้สลิปที่มี QR Code เท่านั้น</li>
+                                            <li>สลิปต้องไม่เก่าเกิน 24 ชั่วโมง</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="goBackToAmount()">
+                                            <i class="fas fa-arrow-left me-2"></i>กลับแก้ไขจำนวน
+                                        </button>
+                                        <button type="button" class="btn btn-success" onclick="proceedToSlipUpload()">
+                                            <i class="fas fa-arrow-right me-2"></i>โอนเงินเรียบร้อย อัปโหลดสลิป
                                         </button>
                                     </div>
-                                </form>
+                                </div>
+
+                                <!-- Step 3: Upload Slip -->
+                                <div id="slipUploadStep" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-upload me-2"></i>อัปโหลดสลิปการโอนเงิน</h6>
+                                        <p class="mb-0">อัปโหลดรูปสลิปการโอนเงิน ระบบจะอ่าน QR Code อัตโนมัติและตรวจสอบการชำระเงิน</p>
+                                    </div>
+
+                                    <form id="bankTransferForm">
+                                        <div class="mb-3">
+                                            <label for="slipImage" class="form-label">
+                                                <i class="fas fa-image me-2"></i>รูปสลิปการโอนเงิน
+                                            </label>
+                                            <input type="file" class="form-control" id="slipImage" 
+                                                   accept="image/jpeg,image/png,image/jpg" required>
+                                            <div class="form-text">อัปโหลดรูปสลิปการโอนเงิน (JPG, PNG เท่านั้น, ขนาดไม่เกิน 10MB)</div>
+                                        </div>
+
+                                        <!-- Slip Preview -->
+                                        <div id="slipPreview" class="mb-3" style="display: none;">
+                                            <label class="form-label">ตัวอย่างสลิป:</label>
+                                            <div class="text-center">
+                                                <img id="previewImage" class="slip-preview" src="#" alt="Slip Preview">
+                                            </div>
+                                        </div>
+
+                                        <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="goBackToBankDetails()">
+                                                <i class="fas fa-arrow-left me-2"></i>กลับ
+                                            </button>
+                                            <button type="submit" class="btn btn-success btn-lg" id="bankTransferBtn">
+                                                <i class="fas fa-check me-2"></i>ยืนยันการเติมเงิน
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -284,13 +424,16 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
     <script>
-        let currentUser = null;
+        // ใช้ window.currentUser แทน let currentUser เพื่อหลีกเลี่ยงการประกาศซ้ำ
+        window.currentUser = window.currentUser || null;
+        let selectedAmount = 0;
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             checkAuth();
             setupForms();
             loadPaymentHistory();
+            setupFilePreview();
         });
 
         // Check authentication
@@ -313,8 +456,8 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    currentUser = data.user;
-                    document.getElementById('currentBalance').textContent = formatPrice(currentUser.credits);
+                    window.currentUser = data.user;
+                    document.getElementById('currentBalance').textContent = formatPrice(window.currentUser.credits);
                     showUserNavigation();
                     updateUserDisplay();
                 } else {
@@ -337,8 +480,85 @@
             // TrueWallet form
             document.getElementById('truewalletForm').addEventListener('submit', handleTrueWalletPayment);
 
+            // Amount form
+            document.getElementById('amountForm').addEventListener('submit', handleAmountSubmit);
+
             // Bank transfer form
             document.getElementById('bankTransferForm').addEventListener('submit', handleBankTransfer);
+        }
+
+        // Setup file preview
+        function setupFilePreview() {
+            const slipImage = document.getElementById('slipImage');
+            slipImage.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const previewImage = document.getElementById('previewImage');
+                        previewImage.src = e.target.result;
+                        document.getElementById('slipPreview').style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Handle amount submit
+        function handleAmountSubmit(e) {
+            e.preventDefault();
+
+            const amount = parseFloat(document.getElementById('transferAmount').value);
+
+            if (!amount || amount < 10 || amount > 50000) {
+                showAlert('กรุณากรอกจำนวนเงิน 10-50,000 บาท', 'warning');
+                return;
+            }
+
+            selectedAmount = amount;
+            document.getElementById('displayAmount').textContent = formatPrice(amount);
+
+            // Update step indicator
+            updateStepIndicator(2);
+
+            // Show bank details step
+            document.getElementById('amountStep').style.display = 'none';
+            document.getElementById('bankDetailsStep').style.display = 'block';
+        }
+
+        // Proceed to slip upload
+        function proceedToSlipUpload() {
+            updateStepIndicator(3);
+            document.getElementById('bankDetailsStep').style.display = 'none';
+            document.getElementById('slipUploadStep').style.display = 'block';
+        }
+
+        // Go back to amount step
+        function goBackToAmount() {
+            updateStepIndicator(1);
+            document.getElementById('bankDetailsStep').style.display = 'none';
+            document.getElementById('amountStep').style.display = 'block';
+        }
+
+        // Go back to bank details
+        function goBackToBankDetails() {
+            updateStepIndicator(2);
+            document.getElementById('slipUploadStep').style.display = 'none';
+            document.getElementById('bankDetailsStep').style.display = 'block';
+        }
+
+        // Update step indicator
+        function updateStepIndicator(activeStep) {
+            for (let i = 1; i <= 3; i++) {
+                const step = document.getElementById(`step${i}`);
+                step.classList.remove('active', 'completed');
+                
+                if (i < activeStep) {
+                    step.classList.add('completed');
+                } else if (i === activeStep) {
+                    step.classList.add('active');
+                }
+            }
         }
 
         // Handle TrueWallet payment
@@ -371,8 +591,8 @@
                     showAlert(`เติมเงินสำเร็จ! จำนวน ${formatPrice(data.data.amount)}`, 'success');
                     
                     // Update balance
-                    currentUser.credits = data.data.new_balance;
-                    document.getElementById('currentBalance').textContent = formatPrice(currentUser.credits);
+                    window.currentUser.credits = data.data.new_balance;
+                    document.getElementById('currentBalance').textContent = formatPrice(window.currentUser.credits);
                     
                     // Reset form
                     document.getElementById('truewalletForm').reset();
@@ -396,7 +616,6 @@
             e.preventDefault();
 
             const slipImage = document.getElementById('slipImage').files[0];
-            const qrcodeText = document.getElementById('qrcodeText').value;
             const submitBtn = document.getElementById('bankTransferBtn');
 
             if (!slipImage) {
@@ -404,8 +623,9 @@
                 return;
             }
 
-            if (!qrcodeText.trim()) {
-                showAlert('กรุณาใส่ข้อความใน QR Code', 'warning');
+            if (!selectedAmount) {
+                showAlert('ไม่พบข้อมูลจำนวนเงิน กรุณาเริ่มใหม่', 'danger');
+                goBackToAmount();
                 return;
             }
 
@@ -420,7 +640,7 @@
             try {
                 const formData = new FormData();
                 formData.append('slip_image', slipImage);
-                formData.append('qrcode_text', qrcodeText);
+                formData.append('expected_amount', selectedAmount);
 
                 const response = await fetch('/api/payments/slip-upload', {
                     method: 'POST',
@@ -436,11 +656,11 @@
                     showAlert(`เติมเงินสำเร็จ! จำนวน ${formatPrice(data.data.amount)}`, 'success');
                     
                     // Update balance
-                    currentUser.credits = data.data.new_balance;
-                    document.getElementById('currentBalance').textContent = formatPrice(currentUser.credits);
+                    window.currentUser.credits = data.data.new_balance;
+                    document.getElementById('currentBalance').textContent = formatPrice(window.currentUser.credits);
                     
-                    // Reset form
-                    document.getElementById('bankTransferForm').reset();
+                    // Reset everything
+                    resetBankTransferForm();
                     
                     // Reload payment history
                     loadPaymentHistory();
@@ -456,10 +676,26 @@
             }
         }
 
-        // Set amount suggestion (for future use with amount input)
+        // Reset bank transfer form
+        function resetBankTransferForm() {
+            selectedAmount = 0;
+            document.getElementById('transferAmount').value = '';
+            document.getElementById('bankTransferForm').reset();
+            document.getElementById('slipPreview').style.display = 'none';
+            
+            // Reset to step 1
+            updateStepIndicator(1);
+            document.getElementById('slipUploadStep').style.display = 'none';
+            document.getElementById('bankDetailsStep').style.display = 'none';
+            document.getElementById('amountStep').style.display = 'block';
+        }
+
+        // Set amount suggestion
         function setAmount(amount) {
-            // This could be used if we add an amount input field
-            console.log('Selected amount:', amount);
+            const amountInput = document.getElementById('transferAmount');
+            if (amountInput && document.getElementById('amountStep').style.display !== 'none') {
+                amountInput.value = amount;
+            }
         }
 
         // Load payment history
@@ -545,5 +781,43 @@
             return texts[status] || status;
         }
     </script>
+
+<script>
+async function api(path, opts={}){
+  const t = localStorage.getItem('authToken');
+  const headers = Object.assign({'Content-Type':'application/json'}, t ? {'Authorization':'Bearer '+t} : {});
+  const res = await fetch(path, Object.assign({ headers }, opts));
+  if(!res.ok) throw new Error('Request failed');
+  return res.json();
+}
+async function loadTransactions(){
+  try{
+    const data = await api('/api/payments/transactions');
+    const list = data.transactions || [];
+    const wrap = document.getElementById('paymentsTransactions') || (function(){
+      const div = document.createElement('div'); div.id='paymentsTransactions';
+      div.innerHTML = '<h5 class="mt-4">ประวัติการเติมเงิน</h5><div id="txWrap"></div>';
+      document.querySelector('main')?.appendChild(div); return div;
+    })();
+    const txWrap = document.getElementById('txWrap');
+    txWrap.innerHTML = '';
+    list.forEach(tx=>{
+      const row = document.createElement('div');
+      row.className = 'border rounded p-2 mb-2';
+      row.innerHTML = '<div><strong>#'+tx.id+'</strong> ['+tx.method+'] '+(tx.status.toUpperCase())+' '
+        + (tx.amount_confirmed? ('- ยอดยืนยัน '+tx.amount_confirmed): (tx.amount_expected? ('- ยอดที่แจ้ง '+tx.amount_expected):'')) 
+        + ' <span class="text-muted">('+(new Date(tx.created_at)).toLocaleString()+')</span></div>';
+      txWrap.appendChild(row);
+    });
+  }catch(e){ console.warn(e); }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const banner = document.createElement('div');
+  banner.className = 'alert alert-info';
+  banner.innerHTML = '<i class="fa fa-clock me-2"></i>หลังอัปโหลดสลิป ระบบจะอยู่ในสถานะ <strong>รอตรวจสอบ</strong> โดยแอดมิน/API ก่อนจึงจะได้เครดิต';
+  document.querySelector('main')?.prepend(banner);
+  loadTransactions();
+});
+</script>
 </body>
 </html>

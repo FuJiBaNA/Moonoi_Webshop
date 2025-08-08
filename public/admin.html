@@ -13,7 +13,84 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="/css/style.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar .list-group-item {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.8);
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .list-group-item:hover,
+        .sidebar .list-group-item.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .stats-card {
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        .activity-item {
+            border-left: 3px solid #007bff;
+            padding-left: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .product-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -28,7 +105,7 @@
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-user-circle me-1"></i>
-                        <span id="adminUsername"></span>
+                        <span id="adminUsername">Loading...</span>
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-tachometer-alt me-2"></i>แดชบอร์ดผู้ใช้</a></li>
@@ -44,13 +121,16 @@
     <div class="container-fluid" style="margin-top: 76px;">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 bg-light vh-100 position-sticky top-0 py-3" style="top: 76px;">
+            <div class="col-md-3 col-lg-2 sidebar vh-100 position-sticky py-3" style="top: 76px;">
                 <div class="list-group list-group-flush">
                     <a href="#dashboard" class="list-group-item list-group-item-action active" data-tab="dashboard">
-                        <i class="fas fa-tachometer-alt me-2"></i>แดشบอร์ด
+                        <i class="fas fa-tachometer-alt me-2"></i>แดชบอร์ด
                     </a>
                     <a href="#products" class="list-group-item list-group-item-action" data-tab="products">
                         <i class="fas fa-box me-2"></i>จัดการสินค้า
+                    </a>
+                    <a href="#categories" class="list-group-item list-group-item-action" data-tab="categories">
+                        <i class="fas fa-tags me-2"></i>หมวดหมู่
                     </a>
                     <a href="#orders" class="list-group-item list-group-item-action" data-tab="orders">
                         <i class="fas fa-shopping-bag me-2"></i>คำสั่งซื้อ
@@ -79,7 +159,7 @@
                 <!-- Dashboard Tab -->
                 <div id="dashboard-content" class="tab-content active">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>แดชบอร์ดแอดมิน</h2>
+                        <h2><i class="fas fa-tachometer-alt me-2"></i>แดชบอร์ดแอดมิน</h2>
                         <div class="text-muted">
                             <i class="fas fa-clock me-1"></i>
                             <span id="currentTime"></span>
@@ -89,7 +169,7 @@
                     <!-- Stats Cards -->
                     <div class="row mb-4">
                         <div class="col-lg-3 col-md-6 mb-3">
-                            <div class="card bg-primary text-white">
+                            <div class="card stats-card bg-primary text-white">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
                                         <div>
@@ -97,15 +177,18 @@
                                             <p class="mb-0">ผู้ใช้ทั้งหมด</p>
                                         </div>
                                         <div class="align-self-center">
-                                            <i class="fas fa-users fa-2x"></i>
+                                            <i class="fas fa-users fa-2x opacity-75"></i>
                                         </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small>+<span id="newUsers30d">0</span> ใน 30 วัน</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-lg-3 col-md-6 mb-3">
-                            <div class="card bg-success text-white">
+                            <div class="card stats-card bg-success text-white">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
                                         <div>
@@ -113,15 +196,18 @@
                                             <p class="mb-0">สินค้าทั้งหมด</p>
                                         </div>
                                         <div class="align-self-center">
-                                            <i class="fas fa-box fa-2x"></i>
+                                            <i class="fas fa-box fa-2x opacity-75"></i>
                                         </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small><span id="activeProducts">0</span> เปิดใช้งาน</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-lg-3 col-md-6 mb-3">
-                            <div class="card bg-warning text-white">
+                            <div class="card stats-card bg-warning text-white">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
                                         <div>
@@ -129,15 +215,18 @@
                                             <p class="mb-0">คำสั่งซื้อ</p>
                                         </div>
                                         <div class="align-self-center">
-                                            <i class="fas fa-shopping-bag fa-2x"></i>
+                                            <i class="fas fa-shopping-bag fa-2x opacity-75"></i>
                                         </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small><span id="orders30d">0</span> ใน 30 วัน</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-lg-3 col-md-6 mb-3">
-                            <div class="card bg-info text-white">
+                            <div class="card stats-card bg-info text-white">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
                                         <div>
@@ -145,20 +234,23 @@
                                             <p class="mb-0">รายได้รวม</p>
                                         </div>
                                         <div class="align-self-center">
-                                            <i class="fas fa-chart-line fa-2x"></i>
+                                            <i class="fas fa-chart-line fa-2x opacity-75"></i>
                                         </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small>฿<span id="revenue30d">0</span> ใน 30 วัน</small>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Recent Activities -->
+                    <!-- Recent Activities & Top Products -->
                     <div class="row">
                         <div class="col-lg-8">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="mb-0">กิจกรรมล่าสุด</h5>
+                                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>กิจกรรมล่าสุด</h5>
                                 </div>
                                 <div class="card-body">
                                     <div id="recentActivities">
@@ -173,7 +265,7 @@
                         <div class="col-lg-4">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="mb-0">สินค้าขายดี</h5>
+                                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>สินค้าขายดี</h5>
                                 </div>
                                 <div class="card-body">
                                     <div id="topProducts">
@@ -190,10 +282,38 @@
                 <!-- Products Tab -->
                 <div id="products-content" class="tab-content">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>จัดการสินค้า</h2>
-                        <button class="btn btn-primary" onclick="showCreateProductModal()">
+                        <h2><i class="fas fa-box me-2"></i>จัดการสินค้า</h2>
+                        <button class="btn btn-primary" onclick="AdminApp.showCreateProductModal()">
                             <i class="fas fa-plus me-1"></i>เพิ่มสินค้า
                         </button>
+                    </div>
+
+                    <!-- Search and Filter -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="productSearch" placeholder="ค้นหาสินค้า...">
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select" id="productCategoryFilter">
+                                        <option value="">ทุกหมวดหมู่</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select" id="productStatusFilter">
+                                        <option value="">ทุกสถานะ</option>
+                                        <option value="1">เปิดใช้งาน</option>
+                                        <option value="0">ปิดใช้งาน</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-outline-primary w-100" onclick="AdminApp.searchProducts()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="card">
@@ -207,13 +327,33 @@
                     </div>
                 </div>
 
+                <!-- Categories Tab -->
+                <div id="categories-content" class="tab-content">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-tags me-2"></i>จัดการหมวดหมู่</h2>
+                        <button class="btn btn-primary" onclick="AdminApp.showCreateCategoryModal()">
+                            <i class="fas fa-plus me-1"></i>เพิ่มหมวดหมู่
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="categoriesTable">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Users Tab -->
                 <div id="users-content" class="tab-content">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>จัดการผู้ใช้</h2>
+                        <h2><i class="fas fa-users me-2"></i>จัดการผู้ใช้</h2>
                         <div class="input-group" style="width: 300px;">
                             <input type="text" class="form-control" id="userSearch" placeholder="ค้นหาผู้ใช้...">
-                            <button class="btn btn-outline-secondary" type="button">
+                            <button class="btn btn-outline-secondary" type="button" onclick="AdminApp.searchUsers()">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
@@ -232,7 +372,17 @@
 
                 <!-- Orders Tab -->
                 <div id="orders-content" class="tab-content">
-                    <h2 class="mb-4">คำสั่งซื้อ</h2>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-shopping-bag me-2"></i>คำสั่งซื้อ</h2>
+                        <div class="btn-group">
+                            <select class="form-select" id="orderStatusFilter">
+                                <option value="">ทุกสถานะ</option>
+                                <option value="pending">รอดำเนินการ</option>
+                                <option value="completed">สำเร็จ</option>
+                                <option value="cancelled">ยกเลิก</option>
+                            </select>
+                        </div>
+                    </div>
                     
                     <div class="card">
                         <div class="card-body">
@@ -247,7 +397,7 @@
 
                 <!-- Payments Tab -->
                 <div id="payments-content" class="tab-content">
-                    <h2 class="mb-4">จัดการการเงิน</h2>
+                    <h2 class="mb-4"><i class="fas fa-credit-card me-2"></i>จัดการการเงิน</h2>
                     
                     <div class="row">
                         <div class="col-lg-8">
@@ -271,7 +421,7 @@
                                     <h5 class="mb-0">ปรับเครดิต</h5>
                                 </div>
                                 <div class="card-body">
-                                    <form id="adjustCreditsForm">
+                                    <form id="adjustCreditsForm" onsubmit="AdminApp.adjustCredits(event)">
                                         <div class="mb-3">
                                             <label class="form-label">ผู้ใช้</label>
                                             <select class="form-select" id="adjustUserId" required>
@@ -296,9 +446,47 @@
                     </div>
                 </div>
 
+                <!-- Licenses Tab -->
+                <div id="licenses-content" class="tab-content">
+                    <h2 class="mb-4"><i class="fas fa-key me-2"></i>จัดการ License</h2>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="licensesTable">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div id="analytics-content" class="tab-content">
+                    <h2 class="mb-4"><i class="fas fa-chart-bar me-2"></i>รายงานและสถิติ</h2>
+                    
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <select class="form-select" id="analyticsPeriod" onchange="AdminApp.loadAnalytics()">
+                                <option value="7d">7 วันที่ผ่านมา</option>
+                                <option value="30d" selected>30 วันที่ผ่านมา</option>
+                                <option value="90d">90 วันที่ผ่านมา</option>
+                                <option value="1y">1 ปีที่ผ่านมา</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="analyticsCharts">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2">กำลังโหลดข้อมูล...</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Settings Tab -->
                 <div id="settings-content" class="tab-content">
-                    <h2 class="mb-4">ตั้งค่าระบบ</h2>
+                    <h2 class="mb-4"><i class="fas fa-cog me-2"></i>ตั้งค่าระบบ</h2>
                     
                     <div class="row">
                         <div class="col-lg-8">
@@ -307,33 +495,33 @@
                                     <h5 class="mb-0">การตั้งค่าทั่วไป</h5>
                                 </div>
                                 <div class="card-body">
-                                    <form id="settingsForm">
+                                    <form id="settingsForm" onsubmit="AdminApp.saveSettings(event)">
                                         <div class="row">
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label">ชื่อเว็บไซต์</label>
-                                                <input type="text" class="form-control" id="siteName">
+                                                <input type="text" class="form-control" id="siteName" name="site_name">
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label">คำอธิบายเว็บไซต์</label>
-                                                <input type="text" class="form-control" id="siteDescription">
+                                                <input type="text" class="form-control" id="siteDescription" name="site_description">
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label">จำนวนเงินเติมขั้นต่ำ (บาท)</label>
-                                                <input type="number" class="form-control" id="minTopupAmount" min="1">
+                                                <input type="number" class="form-control" id="minTopupAmount" name="min_topup_amount" min="1">
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label class="form-label">จำนวนเงินเติมสูงสุด (บาท)</label>
-                                                <input type="number" class="form-control" id="maxTopupAmount" min="1">
+                                                <input type="number" class="form-control" id="maxTopupAmount" name="max_topup_amount" min="1">
                                             </div>
                                         </div>
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="allowRegistration">
+                                            <input class="form-check-input" type="checkbox" id="allowRegistration" name="allow_registration">
                                             <label class="form-check-label" for="allowRegistration">
                                                 อนุญาตให้สมัครสมาชิกใหม่
                                             </label>
                                         </div>
                                         <div class="form-check mb-3">
-                                            <input class="form-check-input" type="checkbox" id="maintenanceMode">
+                                            <input class="form-check-input" type="checkbox" id="maintenanceMode" name="maintenance_mode">
                                             <label class="form-check-label" for="maintenanceMode">
                                                 โหมดปิดปรับปรุง
                                             </label>
@@ -348,592 +536,1683 @@
                     </div>
                 </div>
 
-                <!-- Product Modal -->
-                <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="productModalLabel">เพิ่มสินค้าใหม่</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="productForm">
-                    <input type="hidden" id="productId">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="productName" class="form-label">ชื่อสินค้า</label>
-                                <input type="text" class="form-control" id="productName" required>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productModalLabel">เพิ่มสินค้าใหม่</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="productForm" enctype="multipart/form-data">
+                        <input type="hidden" id="productId">
+                        
+                        <!-- Basic Info -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="productName" class="form-label">ชื่อสินค้า *</label>
+                                    <input type="text" class="form-control" id="productName" name="name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="productCategory" class="form-label">หมวดหมู่ *</label>
+                                    <select class="form-select" id="productCategory" name="category_id" required>
+                                        <option value="">เลือกหมวดหมู่...</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="productCategory" class="form-label">หมวดหมู่</label>
-                                <select class="form-select" id="productCategory" required></select>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="productShortDescription" class="form-label">คำอธิบายสั้น</label>
+                            <input type="text" class="form-control" id="productShortDescription" name="short_description" maxlength="200">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="productDescription" class="form-label">คำอธิบายละเอียด</label>
+                            <textarea class="form-control" id="productDescription" name="description" rows="5"></textarea>
+                        </div>
+
+                        <!-- Price & Type -->
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="productPrice" class="form-label">ราคา (บาท) *</label>
+                                    <input type="number" class="form-control" id="productPrice" name="price" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="productDiscountPrice" class="form-label">ราคาลด (ถ้ามี)</label>
+                                    <input type="number" class="form-control" id="productDiscountPrice" name="discount_price" step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="productType" class="form-label">ประเภทสินค้า *</label>
+                                    <select class="form-select" id="productType" name="product_type" required>
+                                        <option value="script">Script</option>
+                                        <option value="file">File/Asset</option>
+                                        <option value="service">Service</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="productStock" class="form-label">จำนวนสต็อก</label>
+                                    <input type="number" class="form-control" id="productStock" name="stock_quantity" value="-1">
+                                    <small class="text-muted">-1 = ไม่จำกัด</small>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="productDescription" class="form-label">คำอธิบาย</label>
-                        <textarea class="form-control" id="productDescription" rows="5"></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4">
-                             <div class="mb-3">
-                                <label for="productPrice" class="form-label">ราคา (บาท)</label>
-                                <input type="number" class="form-control" id="productPrice" step="0.01" required>
+
+                        <!-- Files -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="productImage" class="form-label">รูปภาพสินค้า</label>
+                                    <input type="file" class="form-control" id="productImage" name="image" accept="image/*">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="productFile" class="form-label">ไฟล์สินค้า</label>
+                                    <input type="file" class="form-control" id="productFile" name="file">
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                             <div class="mb-3">
-                                <label for="productDiscountPrice" class="form-label">ราคาลด (ถ้ามี)</label>
-                                <input type="number" class="form-control" id="productDiscountPrice" step="0.01">
+
+                        <!-- URLs -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="productDemoUrl" class="form-label">URL Demo</label>
+                                    <input type="url" class="form-control" id="productDemoUrl" name="demo_url">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="productVideoUrl" class="form-label">URL วิดีโอ</label>
+                                    <input type="url" class="form-control" id="productVideoUrl" name="video_url">
+                                </div>
                             </div>
                         </div>
-                         <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="productType" class="form-label">ประเภทสินค้า</label>
-                                <select class="form-select" id="productType">
-                                     <option value="script">Script</option>
-                                     <option value="file">File/Asset</option>
-                                </select>
+
+                        <!-- Features -->
+                        <div class="mb-3">
+                            <label for="productFeatures" class="form-label">คุณสมบัติ (แยกด้วย Enter)</label>
+                            <textarea class="form-control" id="productFeatures" name="features" rows="3" placeholder="คุณสมบัติ 1&#10;คุณสมบัติ 2&#10;คุณสมบัติ 3"></textarea>
+                        </div>
+
+                        <!-- Requirements -->
+                        <div class="mb-3">
+                            <label for="productRequirements" class="form-label">ความต้องการของระบบ</label>
+                            <textarea class="form-control" id="productRequirements" name="requirements" rows="2"></textarea>
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="mb-3">
+                            <label for="productTags" class="form-label">แท็ก (คั่นด้วยจุลภาค)</label>
+                            <input type="text" class="form-control" id="productTags" name="tags" placeholder="javascript, web, script">
+                        </div>
+
+                        <!-- Options -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="productIsActive" name="is_active" checked>
+                                    <label class="form-check-label" for="productIsActive">
+                                        เปิดใช้งานสินค้านี้
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="productIsFeatured" name="is_featured">
+                                    <label class="form-check-label" for="productIsFeatured">
+                                        สินค้าแนะนำ
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="productRequiresLicense" name="requires_license">
+                                    <label class="form-check-label" for="productRequiresLicense">
+                                        ต้องใช้ License
+                                    </label>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="productRequiresDiscord" name="requires_discord">
+                                    <label class="form-check-label" for="productRequiresDiscord">
+                                        ต้อง Join Discord
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="productIsActive">
-                        <label class="form-check-label" for="productIsActive">
-                           เปิดใช้งานสินค้านี้
-                        </label>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary" onclick="submitProductForm()">บันทึก</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" onclick="AdminApp.saveProduct()">บันทึก</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-                <div id="licenses-content" class="tab-content">
-                    <h2 class="mb-4">จัดการ License</h2>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        ส่วนนี้อยู่ระหว่างการพัฒนา
-                    </div>
+    <!-- Category Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="categoryModalLabel">เพิ่มหมวดหมู่ใหม่</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-
-                <div id="analytics-content" class="tab-content">
-                    <h2 class="mb-4">รายงานและสถิติ</h2>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        ส่วนนี้อยู่ระหว่างการพัฒนา
-                    </div>
+                <div class="modal-body">
+                    <form id="categoryForm">
+                        <input type="hidden" id="categoryId">
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label">ชื่อหมวดหมู่ *</label>
+                            <input type="text" class="form-control" id="categoryName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryDescription" class="form-label">คำอธิบาย</label>
+                            <textarea class="form-control" id="categoryDescription" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryIcon" class="form-label">ไอคอน (Font Awesome class)</label>
+                            <input type="text" class="form-control" id="categoryIcon" name="icon" placeholder="fas fa-code">
+                        </div>
+                        <div class="mb-3">
+                            <label for="categorySortOrder" class="form-label">ลำดับการแสดง</label>
+                            <input type="number" class="form-control" id="categorySortOrder" name="sort_order" value="0">
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="categoryIsActive" name="is_active" checked>
+                            <label class="form-check-label" for="categoryIsActive">
+                                เปิดใช้งาน
+                            </label>
+                        </div>
+                    </form>
                 </div>
-
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" onclick="AdminApp.saveCategory()">บันทึก</button>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Alert Container -->
+    <div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/app.js"></script>
+    
     <script>
-        let currentUser = null;
+        // Global variables
+        let authToken = localStorage.getItem('authToken');
+        let adminUser = null;
 
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAdminAuth();
-            setupTabSwitching();
-            updateTime();
-            setInterval(updateTime, 1000);
-        });
+        // Admin Application Object
+        const AdminApp = {
+            // Initialization
+            init() {
+                this.checkAdminAuth();
+                this.setupEventListeners();
+                this.updateTime();
+                setInterval(() => this.updateTime(), 1000);
+            },
 
-        // Check admin authentication
-        async function checkAdminAuth() {
-            authToken = localStorage.getItem('authToken');
-            
-            if (!authToken) {
-                window.location.href = '/login?returnUrl=/admin';
-                return;
-            }
+            // Authentication
+            async checkAdminAuth() {
+                if (!authToken) {
+                    window.location.href = '/login?returnUrl=/admin';
+                    return;
+                }
 
-            try {
-                const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
+                try {
+                    const response = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        adminUser = data.user;
+                        
+                        if (!['admin', 'superadmin'].includes(adminUser.role)) {
+                            this.showAlert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'danger');
+                            setTimeout(() => {
+                                window.location.href = '/dashboard';
+                            }, 2000);
+                            return;
+                        }
+                        
+                        document.getElementById('adminUsername').textContent = adminUser.username;
+                        this.loadDashboardData();
+                    } else {
+                        localStorage.removeItem('authToken');
+                        window.location.href = '/login?returnUrl=/admin';
                     }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    currentUser = data.user;
-                    
-                    if (!['admin', 'superadmin'].includes(currentUser.role)) {
-                        showAlert('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'danger');
-                        setTimeout(() => {
-                            window.location.href = '/dashboard';
-                        }, 2000);
-                        return;
-                    }
-                    
-                    document.getElementById('adminUsername').textContent = currentUser.username;
-                    loadDashboardData();
-                } else {
-                    localStorage.removeItem('authToken');
+                } catch (error) {
+                    console.error('Admin auth error:', error);
                     window.location.href = '/login?returnUrl=/admin';
                 }
-            } catch (error) {
-                console.error('Admin auth error:', error);
-                window.location.href = '/login?returnUrl=/admin';
-            }
-        }
+            },
 
-        // Setup tab switching
-        function setupTabSwitching() {
-            document.querySelectorAll('[data-tab]').forEach(tab => {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const tabName = this.dataset.tab;
-                    
-                    // Update active tab
-                    document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Show content
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.classList.remove('active');
+            // Event Listeners
+            setupEventListeners() {
+                // Tab switching
+                document.querySelectorAll('[data-tab]').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.switchTab(tab.dataset.tab);
                     });
-                    document.getElementById(tabName + '-content').classList.add('active');
-                    
-                    // Load data based on tab
-                    loadTabData(tabName);
                 });
-            });
-        }
 
-        // Load tab data
-        async function loadTabData(tabName) {
-            switch(tabName) {
-                case 'dashboard':
-                    await loadDashboardData();
-                    break;
-                case 'products':
-                    await loadProductsData();
-                    break;
-                case 'users':
-                    await loadUsersData();
-                    break;
-                case 'orders':
-                    await loadOrdersData();
-                    break;
-                case 'payments':
-                    await loadPaymentsData();
-                    break;
-                case 'settings':
-                    await loadSettingsData();
-                    break;
-            }
-        }
-
-        // Load dashboard data
-        async function loadDashboardData() {
-            try {
-                const response = await fetch('/api/admin/dashboard', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                // Search inputs
+                document.getElementById('userSearch')?.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.searchUsers();
                 });
-                const data = await response.json();
+
+                document.getElementById('productSearch')?.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.searchProducts();
+                });
+            },
+
+            // Tab Management
+            switchTab(tabName) {
+                // Update active tab
+                document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active'));
+                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
                 
-                if (data.success) {
-                    const stats = data.data.statistics;
-                    document.getElementById('totalUsers').textContent = stats.users.total_users;
-                    document.getElementById('totalProducts').textContent = stats.products.total_products;
-                    document.getElementById('totalOrders').textContent = stats.orders.total_orders;
-                    document.getElementById('totalRevenue').textContent = formatPrice(stats.orders.total_revenue);
-                    
-                    // Load recent activities
-                    loadRecentActivities(data.data.recent_activities);
-                    loadTopProducts(data.data.top_products);
+                // Show content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabName + '-content').classList.add('active');
+                
+                // Load data
+                this.loadTabData(tabName);
+            },
+
+            // Data Loading
+            async loadTabData(tabName) {
+                switch(tabName) {
+                    case 'dashboard':
+                        await this.loadDashboardData();
+                        break;
+                    case 'products':
+                        await this.loadProductsData();
+                        await this.loadCategoriesForFilter();
+                        break;
+                    case 'categories':
+                        await this.loadCategoriesData();
+                        break;
+                    case 'users':
+                        await this.loadUsersData();
+                        await this.loadUsersForSelect();
+                        break;
+                    case 'orders':
+                        await this.loadOrdersData();
+                        break;
+                    case 'payments':
+                        await this.loadPaymentsData();
+                        break;
+                    case 'licenses':
+                        await this.loadLicensesData();
+                        break;
+                    case 'analytics':
+                        await this.loadAnalytics();
+                        break;
+                    case 'settings':
+                        await this.loadSettingsData();
+                        break;
                 }
-            } catch (error) {
-                console.error('Load dashboard error:', error);
-            }
-        }
+            },
 
-        // Load recent activities
-        function loadRecentActivities(activities) {
-            const container = document.getElementById('recentActivities');
-            
-            if (activities.length === 0) {
-                container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีกิจกรรม</div>';
-                return;
-            }
+            // Dashboard
+            async loadDashboardData() {
+                try {
+                    const response = await fetch('/api/admin/dashboard', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const stats = data.data.statistics;
+                        
+                        // Update stats cards
+                        document.getElementById('totalUsers').textContent = stats.users.total_users;
+                        document.getElementById('newUsers30d').textContent = stats.users.new_users_30d;
+                        document.getElementById('totalProducts').textContent = stats.products.total_products;
+                        document.getElementById('activeProducts').textContent = stats.products.active_products;
+                        document.getElementById('totalOrders').textContent = stats.orders.total_orders;
+                        document.getElementById('orders30d').textContent = stats.orders.orders_30d;
+                        document.getElementById('totalRevenue').textContent = this.formatPrice(stats.orders.total_revenue);
+                        document.getElementById('revenue30d').textContent = this.formatPrice(stats.orders.revenue_30d);
+                        
+                        // Load components
+                        this.loadRecentActivities(data.data.recent_activities);
+                        this.loadTopProducts(data.data.top_products);
+                    }
+                } catch (error) {
+                    console.error('Load dashboard error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการโหลดข้อมูล', 'danger');
+                }
+            },
 
-            container.innerHTML = activities.map(activity => `
-                <div class="d-flex align-items-center py-2 border-bottom">
-                    <div class="flex-shrink-0 me-3">
-                        <i class="fas fa-${getActivityIcon(activity.action)} text-primary"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-medium">${getActivityText(activity)}</div>
-                        <small class="text-muted">${formatDate(activity.created_at)}</small>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Load top products
-        function loadTopProducts(products) {
-            const container = document.getElementById('topProducts');
-            
-            if (products.length === 0) {
-                container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีข้อมูล</div>';
-                return;
-            }
-
-            container.innerHTML = products.map((product, index) => `
-                <div class="d-flex align-items-center justify-content-between py-2 ${index < products.length - 1 ? 'border-bottom' : ''}">
-                    <div>
-                        <div class="fw-medium">${product.name}</div>
-                        <small class="text-muted">ขายแล้ว ${product.total_sales} ครั้ง</small>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-medium text-success">${formatPrice(product.total_revenue)}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Load products data
-        async function loadProductsData() {
-            try {
-                const response = await fetch('/api/products', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                const data = await response.json();
+            loadRecentActivities(activities) {
+                const container = document.getElementById('recentActivities');
                 
+                if (activities.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีกิจกรรม</div>';
+                    return;
+                }
+
+                container.innerHTML = activities.map(activity => `
+                    <div class="activity-item">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <i class="fas fa-${this.getActivityIcon(activity.action)} text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-medium">${this.getActivityText(activity)}</div>
+                                <small class="text-muted">${this.formatDate(activity.created_at)}</small>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            loadTopProducts(products) {
+                const container = document.getElementById('topProducts');
+                
+                if (products.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีข้อมูล</div>';
+                    return;
+                }
+
+                container.innerHTML = products.map((product, index) => `
+                    <div class="d-flex align-items-center justify-content-between py-2 ${index < products.length - 1 ? 'border-bottom' : ''}">
+                        <div>
+                            <div class="fw-medium">${product.name}</div>
+                            <small class="text-muted">ขายแล้ว ${product.total_sales} ครั้ง</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-medium text-success">${this.formatPrice(product.total_revenue)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // Products Management
+            async loadProductsData() {
+                try {
+                    const response = await fetch('/api/products', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    this.renderProductsTable(data.success ? data.data.products : []);
+                } catch (error) {
+                    console.error('Load products error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการโหลดสินค้า', 'danger');
+                }
+            },
+
+            renderProductsTable(products) {
                 const container = document.getElementById('productsTable');
-                if (data.success && data.data.products.length > 0) {
-                    container.innerHTML = `
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                
+                if (products.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีสินค้า</div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>สินค้า</th>
+                                    <th>หมวดหมู่</th>
+                                    <th>ราคา</th>
+                                    <th>ขายแล้ว</th>
+                                    <th>สถานะ</th>
+                                    <th width="120">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${products.map(product => `
                                     <tr>
-                                        <th>สินค้า</th>
-                                        <th>หมวดหมู่</th>
-                                        <th>ราคา</th>
-                                        <th>ขายแล้ว</th>
-                                        <th>สถานะ</th>
-                                        <th>จัดการ</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${data.data.products.map(product => `
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <img src="${product.image_url || '/images/logo.png'}" 
-                                                         class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
-                                                    <div>
-                                                        <div class="fw-medium">${product.name}</div>
-                                                        <small class="text-muted">${product.product_type}</small>
-                                                    </div>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="${product.image_url || '/images/logo.png'}" 
+                                                     class="product-thumbnail me-2" alt="${product.name}">
+                                                <div>
+                                                    <div class="fw-medium">${product.name}</div>
+                                                    <small class="text-muted">${product.product_type}</small>
                                                 </div>
-                                            </td>
-                                            <td>${product.category_name || 'ไม่ระบุ'}</td>
-                                            <td>${formatPrice(product.final_price)}</td>
-                                            <td>${product.total_sales}</td>
-                                            <td>
-                                                <span class="badge bg-${product.is_active ? 'success' : 'secondary'}">
-                                                    ${product.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editProduct(${product.id})">
+                                            </div>
+                                        </td>
+                                        <td>${product.category_name || 'ไม่ระบุ'}</td>
+                                        <td>
+                                            <div class="fw-medium">${this.formatPrice(product.final_price)}</div>
+                                            ${product.discount_price ? `<small class="text-muted text-decoration-line-through">${this.formatPrice(product.price)}</small>` : ''}
+                                        </td>
+                                        <td><span class="badge bg-info">${product.total_sales}</span></td>
+                                        <td>
+                                            <span class="badge status-badge bg-${product.is_active ? 'success' : 'secondary'}">
+                                                ${product.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" onclick="AdminApp.editProduct(${product.id})" 
+                                                        title="แก้ไข">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct(${product.id})">
+                                                <button class="btn btn-outline-danger" onclick="AdminApp.deleteProduct(${product.id})" 
+                                                        title="ลบ">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีสินค้า</div>';
-                }
-            } catch (error) {
-                console.error('Load products error:', error);
-            }
-        }
-
-        // Load users data
-        async function loadUsersData() {
-            try {
-                const response = await fetch('/api/admin/users', {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                const data = await response.json();
-                
-                const container = document.getElementById('usersTable');
-                if (data.success && data.data.users.length > 0) {
-                    container.innerHTML = `
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>ผู้ใช้</th>
-                                        <th>อีเมล</th>
-                                        <th>เครดิต</th>
-                                        <th>คำสั่งซื้อ</th>
-                                        <th>สถานะ</th>
-                                        <th>จัดการ</th>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    ${data.data.users.map(user => `
-                                        <tr>
-                                            <td>
-                                                <div>
-                                                    <div class="fw-medium">${user.username}</div>
-                                                    <small class="text-muted">เข้าร่วม ${formatDate(user.created_at)}</small>
-                                                </div>
-                                            </td>
-                                            <td>${user.email}</td>
-                                            <td>${formatPrice(user.credits)}</td>
-                                            <td>${user.total_orders}</td>
-                                            <td>
-                                                <span class="badge bg-${user.is_blacklisted ? 'danger' : (user.is_active ? 'success' : 'secondary')}">
-                                                    ${user.is_blacklisted ? 'ถูกแบน' : (user.is_active ? 'ใช้งานได้' : 'ปิดใช้งาน')}
-                                                </span>
-                                            </td>
-                                            <td>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            async searchProducts() {
+                const search = document.getElementById('productSearch').value;
+                const category = document.getElementById('productCategoryFilter').value;
+                const status = document.getElementById('productStatusFilter').value;
+
+                const params = new URLSearchParams();
+                if (search) params.append('search', search);
+                if (category) params.append('category', category);
+                if (status !== '') params.append('status', status);
+
+                try {
+                    const response = await fetch(`/api/products?${params}`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    this.renderProductsTable(data.success ? data.data.products : []);
+                } catch (error) {
+                    console.error('Search products error:', error);
+                }
+            },
+
+            showCreateProductModal() {
+                document.getElementById('productForm').reset();
+                document.getElementById('productId').value = '';
+                document.getElementById('productModalLabel').textContent = 'เพิ่มสินค้าใหม่';
+                this.loadCategoriesForModal();
+                
+                const modal = new bootstrap.Modal(document.getElementById('productModal'));
+                modal.show();
+            },
+
+            async editProduct(id) {
+                try {
+                    const response = await fetch(`/api/products/${id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const product = data.data.product;
+                        
+                        // Load categories first
+                        await this.loadCategoriesForModal();
+                        
+                        // Fill form
+                        document.getElementById('productId').value = product.id;
+                        document.getElementById('productName').value = product.name;
+                        document.getElementById('productCategory').value = product.category_id;
+                        document.getElementById('productShortDescription').value = product.short_description || '';
+                        document.getElementById('productDescription').value = product.description || '';
+                        document.getElementById('productPrice').value = product.price;
+                        document.getElementById('productDiscountPrice').value = product.discount_price || '';
+                        document.getElementById('productType').value = product.product_type;
+                        document.getElementById('productStock').value = product.stock_quantity || -1;
+                        document.getElementById('productDemoUrl').value = product.demo_url || '';
+                        document.getElementById('productVideoUrl').value = product.video_url || '';
+                        document.getElementById('productRequirements').value = product.requirements || '';
+                        document.getElementById('productIsActive').checked = product.is_active;
+                        document.getElementById('productIsFeatured').checked = product.is_featured;
+                        document.getElementById('productRequiresLicense').checked = product.requires_license;
+                        document.getElementById('productRequiresDiscord').checked = product.requires_discord;
+                        
+                        // Handle features array
+                        if (product.features) {
+                            const features = JSON.parse(product.features);
+                            document.getElementById('productFeatures').value = Array.isArray(features) ? features.join('\n') : '';
+                        }
+                        
+                        // Handle tags array
+                        if (product.tags) {
+                            const tags = JSON.parse(product.tags);
+                            document.getElementById('productTags').value = Array.isArray(tags) ? tags.join(', ') : '';
+                        }
+                        
+                        document.getElementById('productModalLabel').textContent = `แก้ไขสินค้า: ${product.name}`;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('productModal'));
+                        modal.show();
+                    } else {
+                        this.showAlert(data.error || 'ไม่สามารถโหลดข้อมูลสินค้าได้', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Edit product error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                }
+            },
+
+            async saveProduct() {
+                const productId = document.getElementById('productId').value;
+                const isUpdate = !!productId;
+                const url = isUpdate ? `/api/admin/products/${productId}` : '/api/admin/products';
+                const method = isUpdate ? 'PUT' : 'POST';
+
+                const formData = new FormData();
+                
+                // Basic fields
+                formData.append('name', document.getElementById('productName').value);
+                formData.append('category_id', document.getElementById('productCategory').value);
+                formData.append('short_description', document.getElementById('productShortDescription').value);
+                formData.append('description', document.getElementById('productDescription').value);
+                formData.append('price', document.getElementById('productPrice').value);
+                formData.append('discount_price', document.getElementById('productDiscountPrice').value);
+                formData.append('product_type', document.getElementById('productType').value);
+                formData.append('stock_quantity', document.getElementById('productStock').value);
+                formData.append('demo_url', document.getElementById('productDemoUrl').value);
+                formData.append('video_url', document.getElementById('productVideoUrl').value);
+                formData.append('requirements', document.getElementById('productRequirements').value);
+                formData.append('is_active', document.getElementById('productIsActive').checked);
+                formData.append('is_featured', document.getElementById('productIsFeatured').checked);
+                formData.append('requires_license', document.getElementById('productRequiresLicense').checked);
+                formData.append('requires_discord', document.getElementById('productRequiresDiscord').checked);
+                
+                // Features
+                const featuresText = document.getElementById('productFeatures').value;
+                const features = featuresText ? featuresText.split('\n').filter(f => f.trim()) : [];
+                formData.append('features', JSON.stringify(features));
+                
+                // Tags
+                const tagsText = document.getElementById('productTags').value;
+                const tags = tagsText ? tagsText.split(',').map(t => t.trim()).filter(t => t) : [];
+                formData.append('tags', JSON.stringify(tags));
+                
+                // Files
+                const imageFile = document.getElementById('productImage').files[0];
+                if (imageFile) formData.append('image', imageFile);
+                
+                const productFile = document.getElementById('productFile').files[0];
+                if (productFile) formData.append('file', productFile);
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.showAlert('บันทึกข้อมูลสินค้าสำเร็จ', 'success');
+                        
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
+                        modal.hide();
+                        
+                        this.loadProductsData();
+                    } else {
+                        this.showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Save product error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                }
+            },
+
+            async deleteProduct(id) {
+                if (confirm('คุณต้องการลบสินค้านี้ใช่หรือไม่? (การกระทำนี้จะเปลี่ยนสถานะเป็น "ปิดใช้งาน")')) {
+                    try {
+                        const response = await fetch(`/api/admin/products/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${authToken}` }
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            this.showAlert('ลบสินค้าสำเร็จ', 'success');
+                            this.loadProductsData();
+                        } else {
+                            this.showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Delete product error:', error);
+                        this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                    }
+                }
+            },
+
+            async loadCategoriesForModal() {
+                try {
+                    const response = await fetch('/api/products/categories');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const select = document.getElementById('productCategory');
+                        select.innerHTML = '<option value="">เลือกหมวดหมู่...</option>';
+                        
+                        data.data.forEach(cat => {
+                            select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                        });
+                    }
+                } catch (error) {
+                    console.error('Load categories error:', error);
+                }
+            },
+
+            async loadCategoriesForFilter() {
+                try {
+                    const response = await fetch('/api/products/categories');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const select = document.getElementById('productCategoryFilter');
+                        select.innerHTML = '<option value="">ทุกหมวดหมู่</option>';
+                        
+                        data.data.forEach(cat => {
+                            select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+                        });
+                    }
+                } catch (error) {
+                    console.error('Load categories for filter error:', error);
+                }
+            },
+
+            // Categories Management
+            async loadCategoriesData() {
+                try {
+                    const response = await fetch('/api/products/categories');
+                    const data = await response.json();
+                    
+                    this.renderCategoriesTable(data.success ? data.data : []);
+                } catch (error) {
+                    console.error('Load categories error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการโหลดหมวดหมู่', 'danger');
+                }
+            },
+
+            renderCategoriesTable(categories) {
+                const container = document.getElementById('categoriesTable');
+                
+                if (categories.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีหมวดหมู่</div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>หมวดหมู่</th>
+                                    <th>คำอธิบาย</th>
+                                    <th>ลำดับ</th>
+                                    <th>สถานะ</th>
+                                    <th width="120">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${categories.map(category => `
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                ${category.icon ? `<i class="${category.icon} me-2"></i>` : ''}
+                                                <span class="fw-medium">${category.name}</span>
+                                            </div>
+                                        </td>
+                                        <td>${category.description || '-'}</td>
+                                        <td>${category.sort_order}</td>
+                                        <td>
+                                            <span class="badge status-badge bg-${category.is_active ? 'success' : 'secondary'}">
+                                                ${category.is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" onclick="AdminApp.editCategory(${category.id})" 
+                                                        title="แก้ไข">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" onclick="AdminApp.deleteCategory(${category.id})" 
+                                                        title="ลบ">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            showCreateCategoryModal() {
+                document.getElementById('categoryForm').reset();
+                document.getElementById('categoryId').value = '';
+                document.getElementById('categoryModalLabel').textContent = 'เพิ่มหมวดหมู่ใหม่';
+                
+                const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+                modal.show();
+            },
+
+            async editCategory(id) {
+                try {
+                    const response = await fetch(`/api/products/categories/${id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const category = data.data;
+                        
+                        document.getElementById('categoryId').value = category.id;
+                        document.getElementById('categoryName').value = category.name;
+                        document.getElementById('categoryDescription').value = category.description || '';
+                        document.getElementById('categoryIcon').value = category.icon || '';
+                        document.getElementById('categorySortOrder').value = category.sort_order;
+                        document.getElementById('categoryIsActive').checked = category.is_active;
+                        
+                        document.getElementById('categoryModalLabel').textContent = `แก้ไขหมวดหมู่: ${category.name}`;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+                        modal.show();
+                    } else {
+                        this.showAlert(data.error || 'ไม่สามารถโหลดข้อมูลหมวดหมู่ได้', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Edit category error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                }
+            },
+
+            async saveCategory() {
+                const categoryId = document.getElementById('categoryId').value;
+                const isUpdate = !!categoryId;
+                const url = isUpdate ? `/api/admin/categories/${categoryId}` : '/api/admin/categories';
+                const method = isUpdate ? 'PUT' : 'POST';
+
+                const formData = {
+                    name: document.getElementById('categoryName').value,
+                    description: document.getElementById('categoryDescription').value,
+                    icon: document.getElementById('categoryIcon').value,
+                    sort_order: document.getElementById('categorySortOrder').value,
+                    is_active: document.getElementById('categoryIsActive').checked
+                };
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.showAlert('บันทึกข้อมูลหมวดหมู่สำเร็จ', 'success');
+                        
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+                        modal.hide();
+                        
+                        this.loadCategoriesData();
+                    } else {
+                        this.showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Save category error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                }
+            },
+
+            // Users Management
+            async loadUsersData() {
+                try {
+                    const response = await fetch('/api/admin/users', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    this.renderUsersTable(data.success ? data.data.users : []);
+                } catch (error) {
+                    console.error('Load users error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการโหลดผู้ใช้', 'danger');
+                }
+            },
+
+            renderUsersTable(users) {
+                const container = document.getElementById('usersTable');
+                
+                if (users.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีผู้ใช้</div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ผู้ใช้</th>
+                                    <th>อีเมล</th>
+                                    <th>เครดิต</th>
+                                    <th>คำสั่งซื้อ</th>
+                                    <th>สถานะ</th>
+                                    <th width="120">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${users.map(user => `
+                                    <tr class="${user.is_blacklisted ? 'table-danger' : ''}">
+                                        <td>
+                                            <div>
+                                                <div class="fw-medium">${user.username}</div>
+                                                <small class="text-muted">เข้าร่วม ${this.formatDate(user.created_at)}</small>
+                                            </div>
+                                        </td>
+                                        <td>${user.email}</td>
+                                        <td><span class="fw-medium text-success">${this.formatPrice(user.credits)}</span></td>
+                                        <td><span class="badge bg-info">${user.total_orders}</span></td>
+                                        <td>
+                                            <span class="badge status-badge bg-${user.is_blacklisted ? 'danger' : (user.is_active ? 'success' : 'secondary')}">
+                                                ${user.is_blacklisted ? 'ถูกแบน' : (user.is_active ? 'ใช้งานได้' : 'ปิดใช้งาน')}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
                                                 ${!user.is_blacklisted ? 
-                                                    `<button class="btn btn-sm btn-outline-danger" onclick="blacklistUser(${user.id})">
+                                                    `<button class="btn btn-outline-danger" onclick="AdminApp.blacklistUser(${user.id})" title="แบน">
                                                         <i class="fas fa-ban"></i>
                                                     </button>` :
-                                                    `<button class="btn btn-sm btn-outline-success" onclick="unblacklistUser(${user.id})">
+                                                    `<button class="btn btn-outline-success" onclick="AdminApp.unblacklistUser(${user.id})" title="ยกเลิกแบน">
                                                         <i class="fas fa-check"></i>
                                                     </button>`
                                                 }
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีผู้ใช้</div>';
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            async searchUsers() {
+                const search = document.getElementById('userSearch').value;
+
+                try {
+                    const response = await fetch(`/api/admin/users?search=${encodeURIComponent(search)}`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    this.renderUsersTable(data.success ? data.data.users : []);
+                } catch (error) {
+                    console.error('Search users error:', error);
                 }
-            } catch (error) {
-                console.error('Load users error:', error);
-            }
-        }
+            },
 
-        // Update time
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('currentTime').textContent = now.toLocaleString('th-TH');
-        }
+            async blacklistUser(id) {
+                if (confirm('คุณต้องการแบนผู้ใช้นี้หรือไม่?')) {
+                    try {
+                        const response = await fetch(`/api/admin/users/${id}/blacklist`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${authToken}`
+                            },
+                            body: JSON.stringify({ reason: 'Blacklisted by admin' })
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            this.showAlert('แบนผู้ใช้สำเร็จ', 'success');
+                            this.loadUsersData();
+                        } else {
+                            this.showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Blacklist user error:', error);
+                        this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                    }
+                }
+            },
 
-        // Helper functions
-        function getActivityIcon(action) {
-            const icons = {
-                'user_register': 'user-plus',
-                'user_login': 'sign-in-alt',
-                'order_completed': 'shopping-bag',
-                'product_created': 'plus',
-                'payment_approved': 'check'
-            };
-            return icons[action] || 'info-circle';
-        }
+            async unblacklistUser(id) {
+                if (confirm('คุณต้องการยกเลิกการแบนผู้ใช้นี้หรือไม่?')) {
+                    try {
+                        const response = await fetch(`/api/admin/users/${id}/unblacklist`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${authToken}` }
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            this.showAlert('ยกเลิกการแบนสำเร็จ', 'success');
+                            this.loadUsersData();
+                        } else {
+                            this.showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Unblacklist user error:', error);
+                        this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                    }
+                }
+            },
 
-        function getActivityText(activity) {
-            const user = activity.username || 'ผู้ใช้';
-            const actions = {
-                'user_register': `${user} สมัครสมาชิก`,
-                'user_login': `${user} เข้าสู่ระบบ`,
-                'order_completed': `${user} สั่งซื้อสำเร็จ`,
-                'product_created': `สินค้าใหม่ถูกเพิ่ม`,
-                'payment_approved': `การเติมเงินได้รับการอนุมัติ`
-            };
-            return actions[activity.action] || activity.action;
-        }
+            async loadUsersForSelect() {
+                try {
+                    const response = await fetch('/api/admin/users?limit=100', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const select = document.getElementById('adjustUserId');
+                        select.innerHTML = '<option value="">เลือกผู้ใช้...</option>';
+                        
+                        data.data.users.forEach(user => {
+                            select.innerHTML += `<option value="${user.id}">${user.username} (${user.email})</option>`;
+                        });
+                    }
+                } catch (error) {
+                    console.error('Load users for select error:', error);
+                }
+            },
 
-        async function showCreateProductModal() {
-        document.getElementById('productForm').reset();
-        document.getElementById('productId').value = '';
-        document.getElementById('productModalLabel').textContent = 'เพิ่มสินค้าใหม่';
-        // Load categories into select
-        await loadCategoriesForModal();
-        const productModal = new bootstrap.Modal(document.getElementById('productModal'));
-        productModal.show();
-        }
+            // Orders Management
+            async loadOrdersData() {
+                try {
+                    const response = await fetch('/api/admin/orders', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    this.renderOrdersTable(data.success ? data.data.orders : []);
+                } catch (error) {
+                    console.error('Load orders error:', error);
+                    document.getElementById('ordersTable').innerHTML = 
+                        '<div class="text-center text-muted py-3">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+                }
+            },
 
-        async function editProduct(id) {
-        document.getElementById('productForm').reset();
-        await loadCategoriesForModal();
-
-        try {
-            const response = await fetch(`/api/products/${id}`);
-            const data = await response.json();
-            if (data.success) {
-                const product = data.data.product;
-                document.getElementById('productId').value = product.id;
-                document.getElementById('productName').value = product.name;
-                document.getElementById('productCategory').value = product.category_id;
-                document.getElementById('productDescription').value = product.description;
-                document.getElementById('productPrice').value = product.price;
-                document.getElementById('productDiscountPrice').value = product.discount_price || '';
-                document.getElementById('productType').value = product.product_type;
-                document.getElementById('productIsActive').checked = product.is_active;
+            renderOrdersTable(orders) {
+                const container = document.getElementById('ordersTable');
                 
-                document.getElementById('productModalLabel').textContent = `แก้ไขสินค้า: ${product.name}`;
-                const productModal = new bootstrap.Modal(document.getElementById('productModal'));
-                productModal.show();
-            } else {
-                showAlert(data.error || 'ไม่สามารถโหลดข้อมูลสินค้าได้', 'danger');
+                if (orders.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีคำสั่งซื้อ</div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>หมายเลขคำสั่งซื้อ</th>
+                                    <th>ลูกค้า</th>
+                                    <th>จำนวนเงิน</th>
+                                    <th>สถานะ</th>
+                                    <th>วันที่</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${orders.map(order => `
+                                    <tr>
+                                        <td class="fw-medium">${order.order_number}</td>
+                                        <td>${order.customer_username}</td>
+                                        <td class="fw-medium">${this.formatPrice(order.total_amount)}</td>
+                                        <td>
+                                            <span class="badge status-badge bg-${this.getOrderStatusColor(order.order_status)}">
+                                                ${this.getOrderStatusText(order.order_status)}
+                                            </span>
+                                        </td>
+                                        <td>${this.formatDate(order.created_at)}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="AdminApp.viewOrder(${order.id})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            // Payments Management
+            async loadPaymentsData() {
+                try {
+                    const response = await fetch('/api/admin/payments', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    this.renderPaymentsTable(data.success ? data.data.payments : []);
+                } catch (error) {
+                    console.error('Load payments error:', error);
+                    document.getElementById('pendingPayments').innerHTML = 
+                        '<div class="text-center text-muted py-3">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+                }
+            },
+
+            renderPaymentsTable(payments) {
+                const container = document.getElementById('pendingPayments');
+                
+                const pendingPayments = payments.filter(p => p.status === 'pending');
+                
+                if (pendingPayments.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มีคำขอเติมเงินที่รอดำเนินการ</div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ผู้ใช้</th>
+                                    <th>จำนวน</th>
+                                    <th>วิธีการ</th>
+                                    <th>วันที่</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${pendingPayments.map(payment => `
+                                    <tr>
+                                        <td>${payment.user_username}</td>
+                                        <td class="fw-medium">${this.formatPrice(payment.amount)}</td>
+                                        <td>${payment.method_type}</td>
+                                        <td>${this.formatDate(payment.created_at)}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-success" onclick="AdminApp.approvePayment(${payment.id})">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" onclick="AdminApp.rejectPayment(${payment.id})">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            async adjustCredits(event) {
+                event.preventDefault();
+                
+                const userId = document.getElementById('adjustUserId').value;
+                const amount = document.getElementById('adjustAmount').value;
+                const reason = document.getElementById('adjustReason').value;
+
+                if (!userId || !amount || !reason) {
+                    this.showAlert('กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/admin/users/adjust-credits', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ userId, amount, reason })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.showAlert('ปรับเครดิตสำเร็จ', 'success');
+                        document.getElementById('adjustCreditsForm').reset();
+                        this.loadUsersData();
+                    } else {
+                        this.showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Adjust credits error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                }
+            },
+
+            // Licenses Management
+            async loadLicensesData() {
+                try {
+                    const response = await fetch('/api/admin/licenses', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    this.renderLicensesTable(data.success ? data.data.licenses : []);
+                } catch (error) {
+                    console.error('Load licenses error:', error);
+                    document.getElementById('licensesTable').innerHTML = 
+                        '<div class="text-center text-muted py-3">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+                }
+            },
+
+            renderLicensesTable(licenses) {
+                const container = document.getElementById('licensesTable');
+                
+                if (licenses.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted py-3">ไม่มี License</div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>License Key</th>
+                                    <th>ผู้ใช้</th>
+                                    <th>สินค้า</th>
+                                    <th>สถานะ</th>
+                                    <th>วันหมดอายุ</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${licenses.map(license => `
+                                    <tr>
+                                        <td class="fw-medium font-monospace">${license.license_key}</td>
+                                        <td>${license.owner_username}</td>
+                                        <td>${license.product_name}</td>
+                                        <td>
+                                            <span class="badge status-badge bg-${license.is_active ? 'success' : 'secondary'}">
+                                                ${license.is_active ? 'ใช้งานได้' : 'ปิดใช้งาน'}
+                                            </span>
+                                        </td>
+                                        <td>${license.expires_at ? this.formatDate(license.expires_at) : 'ไม่มีกำหนด'}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" onclick="AdminApp.editLicense(${license.id})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" onclick="AdminApp.revokeLicense(${license.id})">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            // Analytics
+            async loadAnalytics() {
+                const period = document.getElementById('analyticsPeriod').value;
+                
+                try {
+                    const response = await fetch(`/api/admin/analytics?period=${period}`, {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.renderAnalyticsCharts(data.data);
+                    } else {
+                        document.getElementById('analyticsCharts').innerHTML = 
+                            '<div class="text-center text-muted py-3">ไม่สามารถโหลดข้อมูลได้</div>';
+                    }
+                } catch (error) {
+                    console.error('Load analytics error:', error);
+                    document.getElementById('analyticsCharts').innerHTML = 
+                        '<div class="text-center text-muted py-3">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>';
+                }
+            },
+
+            renderAnalyticsCharts(data) {
+                document.getElementById('analyticsCharts').innerHTML = `
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">รายได้รายวัน</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="revenueChart">
+                                        ${data.revenue.length > 0 ? 
+                                            this.renderSimpleChart(data.revenue, 'revenue', 'บาท') : 
+                                            '<div class="text-center text-muted py-3">ไม่มีข้อมูล</div>'
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">ผู้ใช้ใหม่รายวัน</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="usersChart">
+                                        ${data.users.length > 0 ? 
+                                            this.renderSimpleChart(data.users, 'new_users', 'คน') : 
+                                            '<div class="text-center text-muted py-3">ไม่มีข้อมูล</div>'
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderSimpleChart(data, valueKey, unit) {
+                const maxValue = Math.max(...data.map(d => d[valueKey]));
+                
+                return `
+                    <div class="chart-container">
+                        ${data.map(item => `
+                            <div class="chart-item d-flex align-items-center mb-2">
+                                <div class="chart-label" style="width: 80px; font-size: 0.8rem;">
+                                    ${this.formatDate(item.date, 'short')}
+                                </div>
+                                <div class="chart-bar-container flex-grow-1 mx-2">
+                                    <div class="chart-bar bg-primary" style="width: ${(item[valueKey] / maxValue) * 100}%; height: 20px; border-radius: 3px;"></div>
+                                </div>
+                                <div class="chart-value fw-medium" style="width: 60px; text-align: right; font-size: 0.9rem;">
+                                    ${item[valueKey]} ${unit}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            },
+
+            // Settings
+            async loadSettingsData() {
+                try {
+                    const response = await fetch('/api/admin/settings', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Populate form with settings
+                        Object.entries(data.data).forEach(([category, settings]) => {
+                            settings.forEach(setting => {
+                                const element = document.getElementById(setting.setting_key);
+                                if (element) {
+                                    if (element.type === 'checkbox') {
+                                        element.checked = setting.setting_value;
+                                    } else {
+                                        element.value = setting.setting_value;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                } catch (error) {
+                    console.error('Load settings error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการโหลดการตั้งค่า', 'danger');
+                }
+            },
+
+            async saveSettings(event) {
+                event.preventDefault();
+                
+                const formData = new FormData(event.target);
+                const settings = [];
+                
+                for (let [key, value] of formData.entries()) {
+                    const element = document.getElementById(key);
+                    let settingType = 'string';
+                    let settingValue = value;
+                    
+                    if (element.type === 'checkbox') {
+                        settingType = 'boolean';
+                        settingValue = element.checked;
+                    } else if (element.type === 'number') {
+                        settingType = 'number';
+                        settingValue = parseFloat(value);
+                    }
+                    
+                    settings.push({
+                        setting_key: key,
+                        setting_value: settingValue,
+                        setting_type: settingType
+                    });
+                }
+
+                try {
+                    const response = await fetch('/api/admin/settings', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ settings })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.showAlert('บันทึกการตั้งค่าสำเร็จ', 'success');
+                    } else {
+                        this.showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Save settings error:', error);
+                    this.showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+                }
+            },
+
+            // Utility Functions
+            updateTime() {
+                const now = new Date();
+                document.getElementById('currentTime').textContent = now.toLocaleString('th-TH');
+            },
+
+            formatPrice(amount) {
+                return new Intl.NumberFormat('th-TH', {
+                    style: 'currency',
+                    currency: 'THB'
+                }).format(amount || 0);
+            },
+
+            formatDate(dateString, format = 'full') {
+                const date = new Date(dateString);
+                if (format === 'short') {
+                    return date.toLocaleDateString('th-TH', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                }
+                return date.toLocaleString('th-TH');
+            },
+
+            getActivityIcon(action) {
+                const icons = {
+                    'user_register': 'user-plus',
+                    'user_login': 'sign-in-alt',
+                    'order_completed': 'shopping-bag',
+                    'product_created': 'plus',
+                    'payment_approved': 'check',
+                    'license_created': 'key',
+                    'user_blacklisted': 'ban',
+                    'product_updated': 'edit',
+                    'credits_adjusted': 'coins'
+                };
+                return icons[action] || 'info-circle';
+            },
+
+            getActivityText(activity) {
+                const user = activity.username || 'ผู้ใช้';
+                const actions = {
+                    'user_register': `${user} สมัครสมาชิก`,
+                    'user_login': `${user} เข้าสู่ระบบ`,
+                    'order_completed': `${user} สั่งซื้อสำเร็จ`,
+                    'product_created': `สินค้าใหม่ถูกเพิ่ม`,
+                    'product_updated': `สินค้าถูกอัปเดต`,
+                    'payment_approved': `การเติมเงินได้รับการอนุมัติ`,
+                    'license_created': `License ใหม่ถูกสร้าง`,
+                    'user_blacklisted': `ผู้ใช้ถูกแบน`,
+                    'credits_adjusted': `เครดิตถูกปรับ`
+                };
+                return actions[activity.action] || activity.action;
+            },
+
+            getOrderStatusColor(status) {
+                const colors = {
+                    'pending': 'warning',
+                    'processing': 'info',
+                    'completed': 'success',
+                    'cancelled': 'danger',
+                    'refunded': 'secondary'
+                };
+                return colors[status] || 'secondary';
+            },
+
+            getOrderStatusText(status) {
+                const texts = {
+                    'pending': 'รอดำเนินการ',
+                    'processing': 'กำลังดำเนินการ',
+                    'completed': 'สำเร็จ',
+                    'cancelled': 'ยกเลิก',
+                    'refunded': 'คืนเงิน'
+                };
+                return texts[status] || status;
+            },
+
+            showAlert(message, type = 'info') {
+                const alertContainer = document.getElementById('alertContainer');
+                const alertId = 'alert-' + Date.now();
+                
+                const alertHtml = `
+                    <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                                          type === 'danger' ? 'exclamation-circle' : 
+                                          type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+                
+                alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    const alert = document.getElementById(alertId);
+                    if (alert) {
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            },
+
+            // Placeholder functions for incomplete features
+            async approvePayment(id) {
+                if (confirm('คุณต้องการอนุมัติการเติมเงินนี้หรือไม่?')) {
+                    this.showAlert('ฟีเจอร์นี้อยู่ระหว่างการพัฒนา', 'info');
+                }
+            },
+
+            async rejectPayment(id) {
+                if (confirm('คุณต้องการปฏิเสธการเติมเงินนี้หรือไม่?')) {
+                    this.showAlert('ฟีเจอร์นี้อยู่ระหว่างการพัฒนา', 'info');
+                }
+            },
+
+            async viewOrder(id) {
+                this.showAlert('ฟีเจอร์นี้อยู่ระหว่างการพัฒนา', 'info');
+            },
+
+            async editLicense(id) {
+                this.showAlert('ฟีเจอร์นี้อยู่ระหว่างการพัฒนา', 'info');
+            },
+
+            async revokeLicense(id) {
+                if (confirm('คุณต้องการเพิกถอน License นี้หรือไม่?')) {
+                    this.showAlert('ฟีเจอร์นี้อยู่ระหว่างการพัฒนา', 'info');
+                }
+            },
+
+            async deleteCategory(id) {
+                if (confirm('คุณต้องการลบหมวดหมู่นี้หรือไม่?')) {
+                    this.showAlert('ฟีเจอร์นี้อยู่ระหว่างการพัฒนา', 'info');
+                }
             }
-        } catch (err) {
-            showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
-        }
-    }
+        };
 
-    async function submitProductForm() {
-        const productId = document.getElementById('productId').value;
-        const isUpdate = !!productId;
-        const url = isUpdate ? `/api/admin/products/${productId}` : '/api/admin/products';
-        const method = isUpdate ? 'PUT' : 'POST';
-
-        const formData = new FormData();
-        formData.append('name', document.getElementById('productName').value);
-        formData.append('category_id', document.getElementById('productCategory').value);
-        formData.append('description', document.getElementById('productDescription').value);
-        formData.append('price', document.getElementById('productPrice').value);
-        formData.append('discount_price', document.getElementById('productDiscountPrice').value);
-        formData.append('product_type', document.getElementById('productType').value);
-        formData.append('is_active', document.getElementById('productIsActive').checked);
-        // Add other fields as needed (file uploads, etc.)
-
-        try {
-            // FormData is not sent as 'application/json'
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Authorization': `Bearer ${authToken}` },
-                body: formData
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                showAlert(`บันทึกข้อมูลสินค้าสำเร็จ`, 'success');
-                const productModal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
-                productModal.hide();
-                loadProductsData(); // Reload table
-            } else {
-                showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
-            }
-        } catch (err) {
-             showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
-        }
-    }
-
-    async function loadCategoriesForModal() {
-        const select = document.getElementById('productCategory');
-        if (select.options.length > 1) return; // Already loaded
-        try {
-            const response = await fetch('/api/products/categories');
-            const data = await response.json();
-            if(data.success) {
-                select.innerHTML = '<option value="">เลือกหมวดหมู่...</option>';
-                data.data.forEach(cat => {
-                    select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
-                });
-            }
-        } catch(err) {
-             console.error('Failed to load categories for modal', err);
-        }
-    }
-
-         async function deleteProduct(id) {
-        if (confirm('คุณต้องการลบสินค้านี้ใช่หรือไม่? (การกระทำนี้จะเปลี่ยนสถานะเป็น "ปิดใช้งาน")')) {
-            try {
-                 const response = await fetch(`/api/admin/products/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                 const data = await response.json();
-                 if (data.success) {
-                    showAlert('ลบสินค้าสำเร็จ', 'success');
-                    loadProductsData();
-                 } else {
-                    showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
-                 }
-            } catch(err) {
-                showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+        // Global Functions
+        function logout() {
+            if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+                localStorage.removeItem('authToken');
+                window.location.href = '/login';
             }
         }
-    }
 
-        async function blacklistUser(id) {
-        if (confirm('คุณต้องการแบนผู้ใช้นี้หรือไม่?')) {
-             try {
-                 const response = await fetch(`/api/admin/users/${id}/blacklist`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ reason: 'Blacklisted by admin' })
-                });
-                 const data = await response.json();
-                 if (data.success) {
-                    showAlert('แบนผู้ใช้สำเร็จ', 'success');
-                    loadUsersData();
-                 } else {
-                    showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
-                 }
-            } catch(err) {
-                showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
-            }
-        }
-    }
-
-    async function unblacklistUser(id) {
-        if (confirm('คุณต้องการยกเลิกการแบนผู้ใช้นี้หรือไม่?')) {
-             try {
-                 const response = await fetch(`/api/admin/users/${id}/unblacklist`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${authToken}` }
-                });
-                 const data = await response.json();
-                 if (data.success) {
-                    showAlert('ยกเลิกการแบนสำเร็จ', 'success');
-                    loadUsersData();
-                 } else {
-                    showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
-                 }
-            } catch(err) {
-                showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
-            }
-        }
-    }
-
-        async function loadOrdersData() {
-            // TODO: Implement load orders
-            document.getElementById('ordersTable').innerHTML = '<div class="text-center text-muted py-3">ส่วนนี้อยู่ระหว่างการพัฒนา</div>';
-        }
-
-        async function loadPaymentsData() {
-            // TODO: Implement load payments
-            document.getElementById('pendingPayments').innerHTML = '<div class="text-center text-muted py-3">ส่วนนี้อยู่ระหว่างการพัฒนา</div>';
-        }
-
-        async function loadSettingsData() {
-            // TODO: Implement load settings
-            console.log('Loading settings...');
-        }
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            AdminApp.init();
+        });
     </script>
+
+<section class="container my-4">
+  <div class="card shadow-sm">
+    <div class="card-header"><i class="fa fa-wallet me-2"></i>ตรวจสอบการเติมเงิน (Payments)</div>
+    <div class="card-body">
+      <div class="mb-2">
+        <select id="payStatus" class="form-select" style="max-width:200px">
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div id="paymentsList">Loading...</div>
+    </div>
+  </div>
+</section>
+<script>
+async function adminApi(path, opts={}){
+  const t = localStorage.getItem('authToken');
+  const headers = Object.assign({'Content-Type':'application/json'}, t ? {'Authorization':'Bearer '+t} : {});
+  const res = await fetch(path, Object.assign({ headers }, opts));
+  if(!res.ok) throw new Error('Request failed');
+  return res.json();
+}
+async function loadAdminPayments(){
+  try{
+    const status = document.getElementById('payStatus').value;
+    const data = await adminApi('/api/admin/payments?status='+encodeURIComponent(status));
+    const list = data.payments || [];
+    const wrap = document.getElementById('paymentsList');
+    wrap.innerHTML = '';
+    if(!list.length){ wrap.textContent = 'ไม่พบรายการ'; return; }
+    list.forEach(p=>{
+      const div = document.createElement('div'); div.className='border rounded p-2 mb-2';
+      const slip = p.slip_filename ? ('<a target="_blank" href="/api/admin/slips/'+p.slip_filename+'">ดูสลิป</a>') : '';
+      div.innerHTML = '<div class="d-flex justify-content-between align-items-center">'
+        + '<div><strong>#'+p.id+'</strong> '+p.username+' ('+p.email+') - ['+p.method+'] <span class="badge bg-secondary">'+p.status+'</span></div>'
+        + '<div>'+slip+'</div>'
+        + '</div>'
+        + '<div class="mt-2">ยอดที่แจ้ง: '+(p.amount_expected ?? '-')+' | ยอดยืนยัน: '+(p.amount_confirmed ?? '-')+'</div>'
+        + (status==='pending' ? '<div class="mt-2 d-flex"><input id="amt-'+p.id+'" type="number" step="0.01" class="form-control me-2" style="max-width:150px" placeholder="ยอดยืนยัน"><button class="btn btn-success me-2" data-act="approve" data-id="'+p.id+'">อนุมัติ</button><button class="btn btn-outline-danger" data-act="reject" data-id="'+p.id+'">ปฏิเสธ</button></div>' : '');
+      wrap.appendChild(div);
+    });
+    wrap.onclick = async (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const id = btn.getAttribute('data-id'); const act = btn.getAttribute('data-act');
+      if(act==='approve'){
+        const v = document.getElementById('amt-'+id).value;
+        if(!v || Number(v)<=0) return alert('กรอกยอดยืนยันให้ถูกต้อง');
+        await adminApi('/api/admin/payments/'+id+'/approve', { method:'POST', body: JSON.stringify({ amount: v }) });
+      } else if(act==='reject'){
+        const note = prompt('เหตุผลที่ปฏิเสธ?') || '';
+        await adminApi('/api/admin/payments/'+id+'/reject', { method:'POST', body: JSON.stringify({ note }) });
+      }
+      loadAdminPayments();
+    };
+  }catch(e){
+    console.warn(e);
+    document.getElementById('paymentsList').textContent = 'โหลดข้อมูลไม่สำเร็จ';
+  }
+}
+document.getElementById('payStatus').addEventListener('change', loadAdminPayments);
+document.addEventListener('DOMContentLoaded', loadAdminPayments);
+</script>
+
+<section class="container my-4">
+  <div class="card shadow-sm">
+    <div class="card-header"><i class="fa fa-gear me-2"></i>Payment Verification Settings</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">โหมดการตรวจสอบ</label>
+          <select id="verifyMode" class="form-select">
+            <option value="manual">Manual (Admin ตรวจ)</option>
+            <option value="auto_api">Auto (ใช้ API)</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">BYShop API key</label>
+          <input id="byshopKey" class="form-control" placeholder="BYShop Key">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">BYShop Endpoint</label>
+          <input id="byshopEndpoint" class="form-control" value="https://byshop.me/api/check_slip">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">TrueMoney Endpoint</label>
+          <input id="tmEndpoint" class="form-control" placeholder="https://...">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">TrueMoney API Key</label>
+          <input id="tmKey" class="form-control" placeholder="API Key">
+        </div>
+      </div>
+      <div class="text-end mt-3">
+        <button class="btn btn-primary" id="saveVerifySettings">บันทึกการตั้งค่า</button>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+async function settingsApi(path, opts={}){
+  const t = localStorage.getItem('authToken');
+  const headers = Object.assign({'Content-Type':'application/json'}, t ? {'Authorization':'Bearer '+t} : {});
+  const res = await fetch(path, Object.assign({ headers }, opts));
+  if(!res.ok) throw new Error('Request failed');
+  return res.json();
+}
+async function loadVerifySettings(){
+  // pull /api/admin/settings then hydrate fields by key
+  const data = await settingsApi('/api/admin/settings');
+  const rows = data.settings || data.data || [];
+  const map = Object.fromEntries(rows.map(r => [r.setting_key, r.setting_value]));
+  document.getElementById('verifyMode').value = map['payments.verify_mode'] || 'manual';
+  document.getElementById('byshopKey').value = map['payments.byslip.keyapi'] || '';
+  document.getElementById('byshopEndpoint').value = map['payments.byslip.endpoint'] || 'https://byshop.me/api/check_slip';
+  document.getElementById('tmEndpoint').value = map['payments.truemoney.endpoint'] || '';
+  document.getElementById('tmKey').value = map['payments.truemoney.apikey'] || '';
+}
+document.getElementById('saveVerifySettings').addEventListener('click', async ()=>{
+  const updates = [
+    { key: 'payments.verify_mode', value: document.getElementById('verifyMode').value },
+    { key: 'payments.byslip.keyapi', value: document.getElementById('byshopKey').value },
+    { key: 'payments.byslip.endpoint', value: document.getElementById('byshopEndpoint').value },
+    { key: 'payments.truemoney.endpoint', value: document.getElementById('tmEndpoint').value },
+    { key: 'payments.truemoney.apikey', value: document.getElementById('tmKey').value },
+  ];
+  try {
+    await settingsApi('/api/admin/settings', { method:'PUT', body: JSON.stringify({ updates }) });
+    alert('บันทึกแล้ว');
+  } catch(e) { alert('บันทึกไม่สำเร็จ'); }
+});
+document.addEventListener('DOMContentLoaded', loadVerifySettings);
+</script>
+
 </body>
 </html>

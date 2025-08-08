@@ -1,7 +1,8 @@
-// routes/orders.js - Order Management Routes (แก้ไขการเข้าถึงฐานข้อมูล)
+// routes/orders.js - Order Management Routes 
 const express = require('express');
 const crypto = require('crypto');
-
+const path = require('path');
+const fs = require('fs');
 const router = express.Router();
 
 // Function to get database pool and other dependencies
@@ -34,7 +35,7 @@ function generateLicenseKey() {
     for (let i = 0; i < 4; i++) {
         segments.push(crypto.randomBytes(2).toString('hex').toUpperCase());
     }
-    return 'LICENSE-' + segments.join('-');
+    return 'MOONOI-' + segments.join('-');
 }
 
 // Helper function to calculate final price
@@ -685,6 +686,137 @@ router.post('/:id/download/:item_id', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Download file error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+
+
+
+// GET /api/orders - Get User's Orders (FIXED: Added user ID filter)
+router.get('/', requireAuth, async (req, res) => {
+    try {
+        const { page = 1, limit = 10, status } = req.query;
+        const userId = req.user.id; // Get user ID from authenticated session/token
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        const pool = dbPool();
+
+        let whereClauses = ['o.user_id = ?'];
+        let queryParams = [userId];
+
+        if (status) {
+            whereClauses.push('o.order_status = ?');
+            queryParams.push(status);
+        }
+
+        const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
+
+        const [countResult] = await pool.execute(`SELECT COUNT(*) as total FROM orders o ${whereSql}`, queryParams);
+        const totalOrders = countResult[0].total;
+
+        const [orders] = await pool.execute(`
+            SELECT 
+                o.*,
+                (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as items_count
+            FROM orders o
+            ${whereSql}
+            ORDER BY o.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [...queryParams, parseInt(limit), offset]);
+
+        res.json({
+            success: true,
+            data: {
+                orders,
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total: totalOrders,
+                    totalPages: Math.ceil(totalOrders / parseInt(limit))
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Get orders error:", error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// GET /api/orders/:id - Get Single Order Details (FIXED: Added user ID filter)
+router.get('/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+        const pool = dbPool();
+
+        const [orders] = await pool.execute('SELECT * FROM orders WHERE id = ? AND user_id = ?', [id, userId]);
+        if (orders.length === 0) {
+            return res.status(404).json({ success: false, error: 'Order not found or access denied.' });
+        }
+
+        const [items] = await pool.execute(`
+            SELECT oi.*, p.name as product_name, p.file_path 
+            FROM order_items oi 
+            LEFT JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?
+        `, [id]);
+
+        const [licenses] = await pool.execute('SELECT * FROM licenses WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = ?)', [id]);
+
+        res.json({ success: true, data: { order: orders[0], items, licenses } });
+    } catch (error) {
+        console.error("Get order details error:", error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// GET /api/orders/download/:item_id - Secure File Download (IMPLEMENTED)
+router.get('/download/:item_id', requireAuth, async (req, res) => {
+    try {
+        const { item_id } = req.params;
+        const userId = req.user.id;
+        const pool = dbPool();
+
+        const [items] = await pool.execute(`
+            SELECT p.file_path, p.name as product_name
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.id = ? AND o.user_id = ? AND o.order_status = 'completed'
+        `, [item_id, userId]);
+
+        if (items.length === 0) {
+            return res.status(404).json({ success: false, error: 'File not found or purchase not completed.' });
+        }
+
+        const item = items[0];
+        if (!item.file_path) {
+            return res.status(404).json({ success: false, error: 'This product does not have a downloadable file.' });
+        }
+
+        // Construct the absolute path to the file
+        // Assumes 'uploads' directory is at the project root
+        const filePath = path.join(__dirname, '..', '..', item.file_path);
+
+        // Check if file exists on the server
+        if (!fs.existsSync(filePath)) {
+            console.error(`File not found on disk: ${filePath}`);
+            return res.status(404).json({ success: false, error: 'File not found on the server. Please contact support.' });
+        }
+        
+        // Use res.download() to securely send the file
+        res.download(filePath, `${item.product_name}${path.extname(item.file_path)}`, (err) => {
+            if (err) {
+                console.error("Download error:", err);
+                // Headers might already be sent, so we can't send a JSON response if that's the case.
+                if (!res.headersSent) {
+                    res.status(500).send("Could not download the file.");
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Download file error:", error);
+        res.status(500).json({ success: false, error: 'Server error during download.' });
     }
 });
 

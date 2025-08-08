@@ -655,6 +655,159 @@ function setupLazyLoading() {
     images.forEach(img => imageObserver.observe(img));
 }
 
+// Function to handle the token from URL after Discord login
+function handleAuthTokenFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+        localStorage.setItem('authToken', token);
+        // Clean the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        showAlert('เข้าสู่ระบบด้วย Discord สำเร็จ!', 'success');
+        // Reload to apply the new auth state
+        setTimeout(() => window.location.reload(), 1500);
+    }
+}
+// Call this function when the app initializes
+document.addEventListener('DOMContentLoaded', handleAuthTokenFromUrl);
+
+
+// Load tab data
+async function loadTabData(tabName) {
+    switch (tabName) {
+        case 'overview':
+            // ... existing
+            break;
+        case 'orders':
+            // ... existing
+            break;
+        case 'licenses': // NEW
+            await loadLicensesData();
+            break;
+        case 'transactions':
+            // ... existing
+            break;
+        case 'profile':
+            // ... existing
+            break;
+    }
+}
+
+// NEW: Load and render user licenses
+async function loadLicensesData() {
+    const container = document.getElementById('licensesList');
+    container.innerHTML = `<div class="text-center py-5"><div class="spinner-border"></div></div>`;
+    try {
+        const response = await fetch('/api/licenses', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+        });
+        const data = await response.json();
+        if (!data.success || data.data.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted py-5">คุณยังไม่มี License</div>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>สินค้า</th>
+                            <th>License Key</th>
+                            <th>IP Address</th>
+                            <th>สถานะ</th>
+                            <th>จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.data.map(license => `
+                            <tr>
+                                <td><strong>${license.product_name}</strong></td>
+                                <td><code class="user-select-all">${license.license_key}</code></td>
+                                <td>${license.ip_address ? `<code>${license.ip_address}</code>` : '<span class="text-muted">ยังไม่ได้ผูก IP</span>'}</td>
+                                <td><span class="badge bg-${license.is_active ? 'success' : 'danger'}">${license.is_active ? 'Active' : 'Inactive'}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="showChangeIpModal(${license.id}, '${license.ip_address || ''}')">
+                                        <i class="fas fa-sync-alt me-1"></i> เปลี่ยน IP
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (error) {
+        container.innerHTML = '<div class="alert alert-danger">ไม่สามารถโหลดข้อมูล License ได้</div>';
+        console.error('Load licenses error:', error);
+    }
+}
+
+// NEW: Handle secure file download
+function handleDownload(itemId, productName) {
+    showAlert('กำลังเตรียมไฟล์ดาวน์โหลด...', 'info');
+    const url = `/api/orders/download/${itemId}`;
+    
+    // Create a temporary anchor to trigger the download
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.setAttribute('download', productName || 'download'); // Set a default filename
+    
+    // Add the Authorization header via a different mechanism if needed,
+    // for direct downloads, this is tricky. A common pattern is to generate a temporary,
+    // single-use token and pass it as a query param. For simplicity, we'll assume
+    // the cookie-based session from passportJS will handle auth for this GET request.
+    // If using only JWT in headers, this approach needs a backend change.
+    
+    // For now, we will use a workaround of opening the URL which will rely on the session cookie
+    window.open(url, '_blank');
+}
+
+
+// NEW: Show change IP modal
+function showChangeIpModal(licenseId, currentIp) {
+    document.getElementById('changeIpForm').reset();
+    document.getElementById('changeIpLicenseId').value = licenseId;
+    document.getElementById('currentIpAddress').value = currentIp || 'N/A';
+    const modal = new bootstrap.Modal(document.getElementById('changeIpModal'));
+    modal.show();
+}
+
+// NEW: Submit change IP request
+async function submitChangeIp() {
+    const btn = document.getElementById('submitChangeIpBtn');
+    showLoading(btn);
+
+    const licenseId = document.getElementById('changeIpLicenseId').value;
+    const newIp = document.getElementById('newIpAddress').value;
+    const reason = document.getElementById('changeIpReason').value;
+
+    try {
+        const response = await fetch(`/api/licenses/${licenseId}/change-ip`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify({ new_ip: newIp, reason: reason })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            showAlert('ส่งคำขอเปลี่ยน IP สำเร็จ!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('changeIpModal')).hide();
+            loadLicensesData(); // Refresh the license list
+        } else {
+            showAlert(data.error || 'เกิดข้อผิดพลาด', 'danger');
+        }
+    } catch (error) {
+        showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'danger');
+    } finally {
+        hideLoading(btn);
+    }
+}
+
+
 // Initialize lazy loading after DOM is ready
 document.addEventListener('DOMContentLoaded', setupLazyLoading);
 
@@ -669,3 +822,33 @@ window.logout = logout;
 window.formatPrice = formatPrice;
 window.formatDate = formatDate;
 window.formatFileSize = formatFileSize;
+
+/** Announcements Banner **/
+async function fetchAnnouncements() {
+  try {
+    const res = await fetch('/api/announcements');
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.announcements || data.data || [];
+  } catch(e) { return []; }
+}
+function renderAnnouncements(list) {
+  if (!Array.isArray(list) || list.length === 0) return;
+  const container = document.createElement('div');
+  container.id = 'announcementsBanner';
+  container.className = 'container my-2';
+  list.slice(0,3).forEach(a => {
+    const div = document.createElement('div');
+    const typeMap = { info:'primary', warning:'warning', success:'success', danger:'danger' };
+    const cls = typeMap[a.announcement_type] || 'primary';
+    div.className = 'alert alert-' + cls + ' d-flex align-items-center';
+    div.innerHTML = `<i class="fa fa-bullhorn me-2"></i><strong>${a.title || ''}</strong> &nbsp; ${a.content || ''}`;
+    container.appendChild(div);
+  });
+  const anchor = document.querySelector('main') || document.body;
+  anchor.prepend(container);
+}
+document.addEventListener('DOMContentLoaded', async () => {
+  const anns = await fetchAnnouncements();
+  renderAnnouncements(anns);
+});

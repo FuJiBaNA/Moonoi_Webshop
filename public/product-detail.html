@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - Moonoi Developer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+     <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-code me-2"></i>
+                <span>Moonoi Developer</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">หน้าแรก</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/products">สินค้า</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">รายละเอียดสินค้า</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/payment">เติมเงิน</a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/cart">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span class="badge bg-primary ms-1" id="cartCount">0</span>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item" id="guestNav">
+                        <a class="nav-link" href="/login">เข้าสู่ระบบ</a>
+                    </li>
+                    
+                    <li class="nav-item" id="userNav" style="display: none;">
+                        <div class="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-1"></i>
+                                <span id="usernameDisplay"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/dashboard"><i class="fas fa-tachometer-alt me-2"></i>แดชบอร์ด</a></li>
+                                <li><a class="dropdown-item" href="/payment"><i class="fas fa-credit-card me-2"></i>เติมเงิน</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" style="margin-top: 100px;">
+        <div id="productDetailContainer" class="row">
+            <div class="col-12 text-center py-5" id="loadingSpinner">
+                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">กำลังโหลดข้อมูลสินค้า...</p>
+            </div>
+            
+            <main id="productContent" class="d-none">
+                <div class="row">
+                    <div class="col-lg-7 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <img id="productImage" src="" class="img-fluid rounded" alt="Product Image">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h1 id="productName" class="h2"></h1>
+                                <div class="d-flex align-items-center mb-3">
+                                    <span id="productCategory" class="badge bg-primary me-2"></span>
+                                    <div id="productRating"></div>
+                                </div>
+                                <p id="productShortDescription" class="text-muted"></p>
+                                
+                                <div class="my-3">
+                                    <span id="productPrice" class="h3"></span>
+                                    <span id="productOriginalPrice" class="text-muted text-decoration-line-through ms-2"></span>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button id="addToCartBtn" class="btn btn-success btn-lg">
+                                        <i class="fas fa-cart-plus me-2"></i> เพิ่มลงตะกร้า
+                                    </button>
+                                    <button id="requestTrialBtn" class="btn btn-outline-secondary">
+                                        <i class="fas fa-vial me-2"></i> ขอทดลองใช้ฟรี
+                                    </button>
+                                </div>
+                                <hr>
+                                <h5><i class="fas fa-star me-2 text-warning"></i>คุณสมบัติเด่น</h5>
+                                <ul id="productFeatures" class="list-unstyled"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                         <div class="card">
+                            <div class="card-header">
+                                <ul class="nav nav-tabs card-header-tabs" id="productTab" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description-pane" type="button">รายละเอียด</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews-pane" type="button">รีวิว</button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-body">
+                                <div class="tab-content" id="productTabContent">
+                                    <div class="tab-pane fade show active p-3" id="description-pane" role="tabpanel">
+                                        <h4>รายละเอียดสินค้า</h4>
+                                        <div id="productFullDescription"></div>
+                                        <h5 class="mt-4">ความต้องการของระบบ</h5>
+                                        <p id="productRequirements"></p>
+                                    </div>
+                                    <div class="tab-pane fade p-3" id="reviews-pane" role="tabpanel">
+                                        <h4>รีวิวจากผู้ซื้อ</h4>
+                                        <div id="productReviewsContainer"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const productId = window.location.pathname.split('/').pop();
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const productContent = document.getElementById('productContent');
+
+            if (!productId) {
+                loadingSpinner.innerHTML = '<div class="alert alert-danger">ไม่พบรหัสสินค้า</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/products/${productId}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'ไม่สามารถโหลดข้อมูลสินค้าได้');
+                }
+
+                populateProductDetails(data.data);
+                loadingSpinner.classList.add('d-none');
+                productContent.classList.remove('d-none');
+
+            } catch (error) {
+                console.error(error);
+                loadingSpinner.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            }
+        });
+
+        function populateProductDetails(data) {
+            const { product, reviews } = data;
+            
+            document.title = `${product.name} - Moonoi Developer`;
+
+            // Main Details
+            document.getElementById('productName').textContent = product.name;
+            document.getElementById('productImage').src = product.image_url || '/images/logo.png';
+            document.getElementById('productImage').alt = product.name;
+            document.getElementById('productCategory').textContent = product.category_name;
+            document.getElementById('productShortDescription').textContent = product.short_description;
+
+            // Price
+            if (product.discount_price) {
+                document.getElementById('productPrice').textContent = formatPrice(product.discount_price);
+                document.getElementById('productOriginalPrice').textContent = formatPrice(product.price);
+            } else {
+                document.getElementById('productPrice').textContent = formatPrice(product.price);
+            }
+            
+            // Features
+            const featuresList = document.getElementById('productFeatures');
+            if (product.features && product.features.length > 0) {
+                featuresList.innerHTML = product.features.map(f => `<li><i class="fas fa-check-circle text-success me-2"></i>${f}</li>`).join('');
+            } else {
+                featuresList.innerHTML = '<li>ไม่มีข้อมูลคุณสมบัติ</li>';
+            }
+
+            // Tabs Content
+            document.getElementById('productFullDescription').innerHTML = product.description;
+            document.getElementById('productRequirements').textContent = product.requirements || 'ไม่มีข้อมูล';
+            
+            // Reviews
+            const reviewsContainer = document.getElementById('productReviewsContainer');
+            if(reviews && reviews.length > 0) {
+                reviewsContainer.innerHTML = reviews.map(r => `
+                    <div class="border-bottom pb-2 mb-2">
+                        <strong>${r.username}</strong>
+                        <div class="text-warning">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+                        <p>${r.review_text}</p>
+                        <small class="text-muted">${formatDate(r.created_at)}</small>
+                    </div>
+                `).join('');
+            } else {
+                reviewsContainer.innerHTML = '<p class="text-muted">ยังไม่มีรีวิวสำหรับสินค้านี้</p>';
+            }
+
+            // Buttons
+            document.getElementById('addToCartBtn').onclick = () => addToCart(product.id);
+            const trialBtn = document.getElementById('requestTrialBtn');
+            if(product.product_type === 'script') {
+                 trialBtn.onclick = () => requestTrial(product.id);
+            } else {
+                trialBtn.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

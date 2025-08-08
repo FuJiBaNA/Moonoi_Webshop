@@ -1,9 +1,8 @@
-// routes/admin.js - Admin Dashboard and Management Routes (แก้ไขการเข้าถึงฐานข้อมูล)
+// routes/admin.js - Admin Dashboard and Management Routes 
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
-
 const router = express.Router();
 
 // Function to get database pool and other dependencies
@@ -26,8 +25,17 @@ try {
 // File upload configuration for admin
 const adminStorage = multer.diskStorage({
     destination: async (req, file, cb) => {
-        const uploadType = req.uploadType || 'general';
-        const uploadPath = `uploads/${uploadType}`;
+        let uploadPath = 'uploads/general';
+        
+        // Determine upload path based on field name
+        if (file.fieldname === 'image') {
+            uploadPath = 'uploads/products';
+        } else if (file.fieldname === 'file') {
+            uploadPath = 'uploads/files';
+        } else if (file.fieldname === 'gallery') {
+            uploadPath = 'uploads/products';
+        }
+        
         try {
             await fs.mkdir(uploadPath, { recursive: true });
             cb(null, uploadPath);
@@ -167,7 +175,7 @@ router.get('/dashboard', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Admin dashboard error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -195,6 +203,14 @@ router.post('/products', requireAuth, requireAdmin, adminUpload.fields([
 
         const adminId = req.user.id;
 
+        // Validate required fields
+        if (!name || !price || !product_type || !category_id) {
+            return res.status(400).json({
+                success: false,
+                error: 'ชื่อสินค้า, ราคา, ประเภทสินค้า และหมวดหมู่ เป็นฟิลด์ที่จำเป็น'
+            });
+        }
+
         // Process uploaded files
         let imageUrl = null;
         let gallery = [];
@@ -216,9 +232,31 @@ router.post('/products', requireAuth, requireAdmin, adminUpload.fields([
             }
         }
 
-        // Parse JSON fields
-        const featuresArray = features ? JSON.parse(features) : [];
-        const tagsArray = tags ? JSON.parse(tags) : [];
+        // Parse JSON fields safely
+        let featuresArray = [];
+        let tagsArray = [];
+
+        try {
+            if (features) {
+                featuresArray = typeof features === 'string' ? JSON.parse(features) : features;
+                if (!Array.isArray(featuresArray)) {
+                    featuresArray = [];
+                }
+            }
+        } catch (e) {
+            featuresArray = [];
+        }
+
+        try {
+            if (tags) {
+                tagsArray = typeof tags === 'string' ? JSON.parse(tags) : tags;
+                if (!Array.isArray(tagsArray)) {
+                    tagsArray = [];
+                }
+            }
+        } catch (e) {
+            tagsArray = [];
+        }
 
         // Create product
         const [result] = await dbPool.execute(`
@@ -230,16 +268,31 @@ router.post('/products', requireAuth, requireAdmin, adminUpload.fields([
                 requirements, features, tags, is_featured, sort_order, created_by
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            name, description, short_description, category_id, product_type,
-            parseFloat(price), discount_price ? parseFloat(discount_price) : null,
-            is_rental === 'true', rental_duration_days ? parseInt(rental_duration_days) : null,
-            requires_discord === 'true', requires_license === 'true',
+            name, 
+            description || null, 
+            short_description || null, 
+            parseInt(category_id), 
+            product_type,
+            parseFloat(price), 
+            discount_price ? parseFloat(discount_price) : null,
+            is_rental === 'true', 
+            rental_duration_days ? parseInt(rental_duration_days) : null,
+            requires_discord === 'true', 
+            requires_license === 'true',
             download_limit ? parseInt(download_limit) : -1,
             stock_quantity ? parseInt(stock_quantity) : -1,
-            imageUrl, JSON.stringify(gallery), filePath, fileSize,
-            demo_url || null, video_url || null, requirements || null,
-            JSON.stringify(featuresArray), JSON.stringify(tagsArray),
-            is_featured === 'true', sort_order ? parseInt(sort_order) : 0, adminId
+            imageUrl, 
+            JSON.stringify(gallery), 
+            filePath, 
+            fileSize,
+            demo_url || null, 
+            video_url || null, 
+            requirements || null,
+            JSON.stringify(featuresArray), 
+            JSON.stringify(tagsArray),
+            is_featured === 'true', 
+            sort_order ? parseInt(sort_order) : 0, 
+            adminId
         ]);
 
         // Log activity
@@ -262,7 +315,7 @@ router.post('/products', requireAuth, requireAdmin, adminUpload.fields([
 
     } catch (error) {
         console.error('Create product error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -287,7 +340,7 @@ router.put('/products/:id', requireAuth, requireAdmin, adminUpload.fields([
         // Get existing product
         const [existingProducts] = await dbPool.execute('SELECT * FROM products WHERE id = ?', [id]);
         if (existingProducts.length === 0) {
-            return res.status(404).json({ error: 'Product not found' });
+            return res.status(404).json({ success: false, error: 'Product not found' });
         }
 
         const existingProduct = existingProducts[0];
@@ -322,9 +375,31 @@ router.put('/products/:id', requireAuth, requireAdmin, adminUpload.fields([
             }
         }
 
-        // Parse JSON fields
-        const featuresArray = features ? JSON.parse(features) : JSON.parse(existingProduct.features || '[]');
-        const tagsArray = tags ? JSON.parse(tags) : JSON.parse(existingProduct.tags || '[]');
+        // Parse JSON fields safely
+        let featuresArray = existingProduct.features ? JSON.parse(existingProduct.features) : [];
+        let tagsArray = existingProduct.tags ? JSON.parse(existingProduct.tags) : [];
+
+        try {
+            if (features !== undefined) {
+                featuresArray = typeof features === 'string' ? JSON.parse(features) : features;
+                if (!Array.isArray(featuresArray)) {
+                    featuresArray = [];
+                }
+            }
+        } catch (e) {
+            // Keep existing features if parsing fails
+        }
+
+        try {
+            if (tags !== undefined) {
+                tagsArray = typeof tags === 'string' ? JSON.parse(tags) : tags;
+                if (!Array.isArray(tagsArray)) {
+                    tagsArray = [];
+                }
+            }
+        } catch (e) {
+            // Keep existing tags if parsing fails
+        }
 
         // Update product
         await dbPool.execute(`
@@ -337,24 +412,28 @@ router.put('/products/:id', requireAuth, requireAdmin, adminUpload.fields([
                 is_active = ?, updated_at = NOW()
             WHERE id = ?
         `, [
-            name || existingProduct.name,
-            description || existingProduct.description,
-            short_description || existingProduct.short_description,
-            category_id || existingProduct.category_id,
-            product_type || existingProduct.product_type,
-            price ? parseFloat(price) : existingProduct.price,
-            discount_price ? parseFloat(discount_price) : existingProduct.discount_price,
+            name !== undefined ? name : existingProduct.name,
+            description !== undefined ? description : existingProduct.description,
+            short_description !== undefined ? short_description : existingProduct.short_description,
+            category_id !== undefined ? parseInt(category_id) : existingProduct.category_id,
+            product_type !== undefined ? product_type : existingProduct.product_type,
+            price !== undefined ? parseFloat(price) : existingProduct.price,
+            discount_price !== undefined ? (discount_price ? parseFloat(discount_price) : null) : existingProduct.discount_price,
             is_rental !== undefined ? (is_rental === 'true') : existingProduct.is_rental,
-            rental_duration_days ? parseInt(rental_duration_days) : existingProduct.rental_duration_days,
+            rental_duration_days !== undefined ? (rental_duration_days ? parseInt(rental_duration_days) : null) : existingProduct.rental_duration_days,
             requires_discord !== undefined ? (requires_discord === 'true') : existingProduct.requires_discord,
             requires_license !== undefined ? (requires_license === 'true') : existingProduct.requires_license,
             download_limit !== undefined ? parseInt(download_limit) : existingProduct.download_limit,
             stock_quantity !== undefined ? parseInt(stock_quantity) : existingProduct.stock_quantity,
-            imageUrl, JSON.stringify(gallery), filePath, fileSize,
+            imageUrl, 
+            JSON.stringify(gallery), 
+            filePath, 
+            fileSize,
             demo_url !== undefined ? demo_url : existingProduct.demo_url,
             video_url !== undefined ? video_url : existingProduct.video_url,
             requirements !== undefined ? requirements : existingProduct.requirements,
-            JSON.stringify(featuresArray), JSON.stringify(tagsArray),
+            JSON.stringify(featuresArray), 
+            JSON.stringify(tagsArray),
             is_featured !== undefined ? (is_featured === 'true') : existingProduct.is_featured,
             sort_order !== undefined ? parseInt(sort_order) : existingProduct.sort_order,
             is_active !== undefined ? (is_active === 'true') : existingProduct.is_active,
@@ -374,7 +453,7 @@ router.put('/products/:id', requireAuth, requireAdmin, adminUpload.fields([
 
     } catch (error) {
         console.error('Update product error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -395,7 +474,7 @@ router.delete('/products/:id', requireAuth, requireAdmin, async (req, res) => {
         // Get product details
         const [products] = await dbPool.execute('SELECT name FROM products WHERE id = ?', [id]);
         if (products.length === 0) {
-            return res.status(404).json({ error: 'Product not found' });
+            return res.status(404).json({ success: false, error: 'Product not found' });
         }
 
         const product = products[0];
@@ -415,7 +494,7 @@ router.delete('/products/:id', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Delete product error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -434,13 +513,13 @@ router.post('/categories', requireAuth, requireAdmin, async (req, res) => {
         const adminId = req.user.id;
 
         if (!name) {
-            return res.status(400).json({ error: 'Category name is required' });
+            return res.status(400).json({ success: false, error: 'Category name is required' });
         }
 
         // Check if category exists
         const [existing] = await dbPool.execute('SELECT id FROM categories WHERE name = ?', [name]);
         if (existing.length > 0) {
-            return res.status(400).json({ error: 'Category already exists' });
+            return res.status(400).json({ success: false, error: 'Category already exists' });
         }
 
         // Create category
@@ -465,7 +544,7 @@ router.post('/categories', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Create category error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -487,7 +566,7 @@ router.put('/categories/:id', requireAuth, requireAdmin, async (req, res) => {
         // Check if category exists
         const [categories] = await dbPool.execute('SELECT name FROM categories WHERE id = ?', [id]);
         if (categories.length === 0) {
-            return res.status(404).json({ error: 'Category not found' });
+            return res.status(404).json({ success: false, error: 'Category not found' });
         }
 
         // Update category
@@ -500,7 +579,7 @@ router.put('/categories/:id', requireAuth, requireAdmin, async (req, res) => {
             description,
             icon,
             sort_order ? parseInt(sort_order) : 0,
-            is_active !== undefined ? (is_active === 'true') : true,
+            is_active !== undefined ? (is_active === 'true' || is_active === true) : true,
             id
         ]);
 
@@ -516,7 +595,7 @@ router.put('/categories/:id', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Update category error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -601,7 +680,7 @@ router.get('/users', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Get admin users error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -623,13 +702,13 @@ router.post('/users/:id/blacklist', requireAuth, requireAdmin, async (req, res) 
         // Get user details
         const [users] = await dbPool.execute('SELECT username, is_blacklisted FROM users WHERE id = ?', [id]);
         if (users.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(404).json({ success: false, error: 'User not found' });
         }
 
         const user = users[0];
 
         if (user.is_blacklisted) {
-            return res.status(400).json({ error: 'User is already blacklisted' });
+            return res.status(400).json({ success: false, error: 'User is already blacklisted' });
         }
 
         // Blacklist user
@@ -655,7 +734,7 @@ router.post('/users/:id/blacklist', requireAuth, requireAdmin, async (req, res) 
 
     } catch (error) {
         console.error('Blacklist user error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -676,13 +755,13 @@ router.post('/users/:id/unblacklist', requireAuth, requireAdmin, async (req, res
         // Get user details
         const [users] = await dbPool.execute('SELECT username, is_blacklisted FROM users WHERE id = ?', [id]);
         if (users.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(404).json({ success: false, error: 'User not found' });
         }
 
         const user = users[0];
 
         if (!user.is_blacklisted) {
-            return res.status(400).json({ error: 'User is not blacklisted' });
+            return res.status(400).json({ success: false, error: 'User is not blacklisted' });
         }
 
         // Unblacklist user
@@ -704,7 +783,7 @@ router.post('/users/:id/unblacklist', requireAuth, requireAdmin, async (req, res
 
     } catch (error) {
         console.error('Unblacklist user error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -767,7 +846,7 @@ router.get('/settings', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Get settings error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -786,7 +865,7 @@ router.put('/settings', requireAuth, requireAdmin, async (req, res) => {
         const adminId = req.user.id;
 
         if (!settings || !Array.isArray(settings)) {
-            return res.status(400).json({ error: 'Settings array is required' });
+            return res.status(400).json({ success: false, error: 'Settings array is required' });
         }
 
         // Update each setting
@@ -821,7 +900,7 @@ router.put('/settings', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Update settings error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -840,7 +919,7 @@ router.post('/announcements', requireAuth, requireAdmin, async (req, res) => {
         const adminId = req.user.id;
 
         if (!title || !content) {
-            return res.status(400).json({ error: 'Title and content are required' });
+            return res.status(400).json({ success: false, error: 'Title and content are required' });
         }
 
         // Create announcement
@@ -874,7 +953,7 @@ router.post('/announcements', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Create announcement error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -963,7 +1042,7 @@ router.get('/analytics', requireAuth, requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('Get analytics error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
 
@@ -971,6 +1050,13 @@ router.get('/analytics', requireAuth, requireAdmin, async (req, res) => {
 router.get('/orders', requireAuth, requireAdmin, async (req, res) => {
     try {
         const dbPool = getDbPool();
+        if (!dbPool) {
+            return res.status(503).json({ 
+                success: false, 
+                error: 'Database not available' 
+            });
+        }
+
         const { page = 1, limit = 20, search, status } = req.query;
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -1014,15 +1100,21 @@ router.get('/orders', requireAuth, requireAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error('Admin get orders error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
-
 
 // GET /api/admin/payments - ดูประวัติการเติมเงินทั้งหมด
 router.get('/payments', requireAuth, requireAdmin, async (req, res) => {
     try {
         const dbPool = getDbPool();
+        if (!dbPool) {
+            return res.status(503).json({ 
+                success: false, 
+                error: 'Database not available' 
+            });
+        }
+
         const { page = 1, limit = 20, status, method } = req.query;
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -1064,15 +1156,21 @@ router.get('/payments', requireAuth, requireAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error('Admin get payments error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 });
-
 
 // POST /api/admin/users/adjust-credits - ปรับเครดิตผู้ใช้
 router.post('/users/adjust-credits', requireAuth, requireAdmin, async (req, res) => {
     try {
         const dbPool = getDbPool();
+        if (!dbPool) {
+            return res.status(503).json({ 
+                success: false, 
+                error: 'Database not available' 
+            });
+        }
+
         const { userId, amount, reason } = req.body;
         const adminId = req.user.id;
         const parsedAmount = parseFloat(amount);
@@ -1081,12 +1179,17 @@ router.post('/users/adjust-credits', requireAuth, requireAdmin, async (req, res)
             return res.status(400).json({ success: false, error: 'User ID, amount, and reason are required' });
         }
 
-        const [users] = await dbPool.execute('SELECT credits FROM users WHERE id = ?', [userId]);
+        const [users] = await dbPool.execute('SELECT credits, username FROM users WHERE id = ?', [userId]);
         if (users.length === 0) {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
+        
         const balanceBefore = parseFloat(users[0].credits);
         const balanceAfter = balanceBefore + parsedAmount;
+
+        if (balanceAfter < 0) {
+            return res.status(400).json({ success: false, error: 'ยอดเครดิตจะไม่สามารถติดลบได้' });
+        }
 
         await dbPool.execute('UPDATE users SET credits = ? WHERE id = ?', [balanceAfter, userId]);
 
@@ -1096,9 +1199,24 @@ router.post('/users/adjust-credits', requireAuth, requireAdmin, async (req, res)
             VALUES (?, 'admin_adjustment', ?, ?, ?, 'admin', ?, ?, ?)
         `, [userId, parsedAmount, balanceBefore, balanceAfter, adminId, `Admin adjustment: ${reason}`, adminId]);
 
-        logActivity(adminId, 'credits_adjusted', 'user', userId, { target_user_id: userId, amount: parsedAmount, reason }, req);
+        await logActivity(adminId, 'credits_adjusted', 'user', userId, { 
+            target_user_id: userId, 
+            target_username: users[0].username,
+            amount: parsedAmount, 
+            reason 
+        }, req);
 
-        res.json({ success: true, message: 'Credits adjusted successfully', data: { userId, newBalance: balanceAfter } });
+        res.json({ 
+            success: true, 
+            message: 'Credits adjusted successfully', 
+            data: { 
+                userId, 
+                username: users[0].username,
+                balanceBefore: balanceBefore,
+                balanceAfter: balanceAfter,
+                adjustment: parsedAmount
+            } 
+        });
     } catch (error) {
         console.error('Adjust credits error:', error);
         res.status(500).json({ success: false, error: 'Internal server error' });
@@ -1109,6 +1227,13 @@ router.post('/users/adjust-credits', requireAuth, requireAdmin, async (req, res)
 router.get('/licenses', requireAuth, requireAdmin, async (req, res) => {
     try {
         const dbPool = getDbPool();
+        if (!dbPool) {
+            return res.status(503).json({ 
+                success: false, 
+                error: 'Database not available' 
+            });
+        }
+
         const { page = 1, limit = 20, search } = req.query;
         const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -1154,9 +1279,224 @@ router.get('/licenses', requireAuth, requireAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error('Admin get licenses error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// POST /api/admin/payments/:id/approve - Approve a pending payment
+router.post('/payments/:id/approve', requireAuth, requireAdmin, async (req, res) => {
+    const paymentId = req.params.id;
+    const adminId = req.user.id;
+    const pool = dbPool();
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        const [payments] = await connection.execute("SELECT * FROM payment_requests WHERE id = ? AND status = 'pending' FOR UPDATE", [paymentId]);
+        if (payments.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, error: 'Pending payment not found.' });
+        }
+        const payment = payments[0];
+        const { user_id, amount } = payment;
+
+        // Add credits to user
+        const [user] = await connection.execute('SELECT credits FROM users WHERE id = ?', [user_id]);
+        const balanceBefore = parseFloat(user[0].credits);
+        const balanceAfter = balanceBefore + parseFloat(amount);
+        await connection.execute('UPDATE users SET credits = ? WHERE id = ?', [balanceAfter, user_id]);
+
+        // Record credit transaction
+        await connection.execute(`
+            INSERT INTO credit_transactions (user_id, transaction_type, amount, balance_before, balance_after, reference_type, reference_id, description, processed_by)
+            VALUES (?, 'deposit', ?, ?, ?, 'payment', ?, ?, ?)`,
+            [user_id, amount, balanceBefore, balanceAfter, paymentId, `Approved deposit via ${payment.method_type}`, adminId]
+        );
+
+        // Update payment request status
+        await connection.execute("UPDATE payment_requests SET status = 'completed', processed_by = ?, completed_at = NOW() WHERE id = ?", [adminId, paymentId]);
+
+        await connection.commit();
+        res.json({ success: true, message: 'Payment approved and credits added.' });
+    } catch (error) {
+        await connection.rollback();
+        console.error("Approve payment error:", error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    } finally {
+        connection.release();
+    }
+});
+
+// POST /api/admin/payments/:id/reject - Reject a pending payment
+router.post('/payments/:id/reject', requireAuth, requireAdmin, async (req, res) => {
+    const paymentId = req.params.id;
+    const adminId = req.user.id;
+    const { reason } = req.body;
+    const pool = dbPool();
+
+    try {
+        const [payments] = await pool.execute("SELECT * FROM payment_requests WHERE id = ? AND status = 'pending'", [paymentId]);
+        if (payments.length === 0) {
+            return res.status(404).json({ success: false, error: 'Pending payment not found.' });
+        }
+
+        await pool.execute("UPDATE payment_requests SET status = 'failed', processed_by = ?, notes = ? WHERE id = ?", [adminId, reason || 'Rejected by admin', paymentId]);
+
+        res.json({ success: true, message: 'Payment rejected.' });
+    } catch (error) {
+        console.error("Reject payment error:", error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// DELETE /api/admin/categories/:id - Soft delete a category
+router.delete('/categories/:id', requireAuth, requireAdmin, async (req, res) => {
+    const categoryId = req.params.id;
+    const pool = dbPool();
+    try {
+        const [result] = await pool.execute("UPDATE categories SET is_active = 0 WHERE id = ?", [categoryId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Category not found.' });
+        }
+        res.json({ success: true, message: 'Category has been deactivated.' });
+    } catch (error) {
+        console.error("Delete category error:", error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// POST /api/admin/licenses/:id/revoke - Revoke a license
+router.post('/licenses/:id/revoke', requireAuth, requireAdmin, async (req, res) => {
+    const licenseId = req.params.id;
+    const pool = dbPool();
+    try {
+        const [result] = await pool.execute("UPDATE licenses SET is_active = 0 WHERE id = ?", [licenseId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'License not found.' });
+        }
+        res.json({ success: true, message: 'License has been revoked.' });
+    } catch (error) {
+        console.error("Revoke license error:", error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// GET /api/admin/orders/:id - View details of any order
+router.get('/orders/:id', requireAuth, requireAdmin, async (req, res) => {
+    const orderId = req.params.id;
+    const pool = dbPool();
+    try {
+        const [orders] = await pool.execute(`
+            SELECT o.*, u.username, u.email 
+            FROM orders o 
+            JOIN users u ON o.user_id = u.id 
+            WHERE o.id = ?
+        `, [orderId]);
+        if (orders.length === 0) {
+            return res.status(404).json({ success: false, error: 'Order not found.' });
+        }
+        // ... can add logic to get order items too
+        res.json({ success: true, data: orders[0] });
+    } catch (error) {
+        console.error("Admin view order error:", error);
+        res.status(500).json({ success: false, error: 'Server error' });
     }
 });
 
 
 module.exports = router;
+
+// --- Admin payments moderation ---
+router.get('/payments', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const db = getDbPool();
+    if (!db) return res.status(500).json({ error:'Database not available' });
+    await db.execute(`CREATE TABLE IF NOT EXISTS payment_transactions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      method ENUM('bank_slip','truewallet','promptpay','other') DEFAULT 'bank_slip',
+      status ENUM('pending','approved','rejected') DEFAULT 'pending',
+      amount_expected DECIMAL(10,2) NULL,
+      amount_confirmed DECIMAL(10,2) NULL,
+      slip_filename VARCHAR(255) NULL,
+      reference VARCHAR(255) NULL,
+      admin_note TEXT NULL,
+      metadata JSON NULL,
+      verified_by INT NULL,
+      verified_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+    const { status='pending' } = req.query;
+    const [rows] = await db.execute(`
+      SELECT pt.*, u.username, u.email
+      FROM payment_transactions pt
+      LEFT JOIN users u ON pt.user_id = u.id
+      WHERE pt.status = ?
+      ORDER BY pt.id DESC
+      LIMIT 200
+    `, [status]);
+    res.json({ payments: rows });
+  } catch (e) {
+    console.error('List payments error:', e);
+    res.status(500).json({ error:'Failed to list payments' });
+  }
+});
+
+router.post('/payments/:id/approve', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const db = getDbPool();
+    if (!db) return res.status(500).json({ error:'Database not available' });
+    const id = parseInt(req.params.id, 10);
+    const amount = parseFloat((req.body && req.body.amount) || '0');
+    if (isNaN(amount) || amount <= 0) return res.status(400).json({ error:'Invalid amount' });
+    await db.beginTransaction();
+    const [rows] = await db.execute('SELECT * FROM payment_transactions WHERE id = ? FOR UPDATE', [id]);
+    if (!rows.length) { await db.rollback(); return res.status(404).json({ error:'Not found' }); }
+    const row = rows[0];
+    if (row.status !== 'pending') { await db.rollback(); return res.status(400).json({ error:'Already processed' }); }
+    await db.execute('UPDATE payment_transactions SET status = ?, amount_confirmed = ?, verified_by = ?, verified_at = NOW() WHERE id = ?', ['approved', amount, req.user.id, id]);
+    await db.execute('UPDATE users SET credits = credits + ? WHERE id = ?', [amount, row.user_id]);
+    await db.commit();
+    await logActivity(req.user.id, 'payment_approved', 'payment', id, { amount }, req);
+    res.json({ message:'Approved', id, amount });
+  } catch (e) {
+    try { const db = getDbPool(); await db.rollback(); } catch (_){}
+    console.error('Approve payment error:', e);
+    res.status(500).json({ error:'Failed to approve' });
+  }
+});
+
+router.post('/payments/:id/reject', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const db = getDbPool();
+    if (!db) return res.status(500).json({ error:'Database not available' });
+    const id = parseInt(req.params.id, 10);
+    const note = String((req.body && req.body.note) || '').slice(0,500);
+    const [r] = await db.execute('UPDATE payment_transactions SET status = ?, admin_note = ?, verified_by = ?, verified_at = NOW() WHERE id = ? AND status = "pending"', ['rejected', note, req.user.id, id]);
+    if (r.affectedRows === 0) return res.status(400).json({ error:'Already processed or not found' });
+    await logActivity(req.user.id, 'payment_rejected', 'payment', id, { note }, req);
+    res.json({ message:'Rejected', id });
+  } catch (e) {
+    console.error('Reject payment error:', e);
+    res.status(500).json({ error:'Failed to reject' });
+  }
+});
+
+
+// Serve slip image (admin only)
+router.get('/slips/:filename', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const fname = String(req.params.filename || '').replace(/[^a-zA-Z0-9._-]/g, '');
+    const full = require('path').resolve(process.cwd(), 'uploads', 'slips', fname);
+    const base = require('path').resolve(process.cwd(), 'uploads', 'slips');
+    if (!full.startsWith(base)) return res.status(400).json({ error:'Invalid path' });
+    const fs = require('fs');
+    if (!fs.existsSync(full)) return res.status(404).json({ error:'Not found' });
+    res.sendFile(full);
+  } catch (e) {
+    res.status(500).json({ error:'Failed to load slip' });
+  }
+});
